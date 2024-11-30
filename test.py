@@ -783,7 +783,7 @@ class salim:
                                         del temp_work[key_work]["skills"]
                                         if temp_work[key_work]["responsibilities"] and not language:
                                             language = detect(temp_work[key_work]["responsibilities"])
-                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}"
+                                        temp_work[key_work]["responsibilities"] = (f"{temp_work[key_work]['responsibilities']}")
                                     temp_work = self.merge_jobs(temp_work)
                                     section_text = json.dumps(temp_work)
                                 extracted_info[key] = json.loads(section_text.replace("\n", "").replace("\r", "").replace("<br><br>", "<br>"))
