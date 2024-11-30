@@ -470,6 +470,10 @@ async def get_report():
         return JSONResponse(content={"error": f"Failed to retrieve report: {str(e)}"}, status_code=500)
 
 
+@app.get("/")
+async def keep_alive():
+    return JSONResponse(content={"message": "App is alive!"}, status_code=200)
+
 
 if __name__ == '__main__':
     uvicorn.run("mainV2:app", port=1496)
