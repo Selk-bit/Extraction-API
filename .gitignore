@@ -1,0 +1,7 @@
+.env
+venv/
+__pycache__/
+serviceAccount.json
+CVs/
+Test CVs JSON/
+extractionRate.py

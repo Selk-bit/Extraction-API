@@ -1,0 +1,1487 @@
+Answer:
+1. Title: Architecte - Expert Technique
+2. Name: Saad KHRIFOU
+3. Email: saad.khrifou@gmail.com
+4. Phone: +212 6 59 61 59 32
+5. Age: ""
+6. City: ""
+7. Work Experiences:
+[
+{
+"job_title": "Consultant Architecte/Expert Technique",
+"company_name": "CGI",
+"responsibilities": "<br>● Migration Java<br>● Migration Websphere vers tomcat<br>● Mise à niveau des environnements<br>● DevOps<br>● Audit Security Applicatif<br>● Performance des batches<br>● Migration oracle<br>● Cadrage & Accompagnement des équipes",
+"city": "",
+"start_date": "01/2021",
+"end_date": "present"
+},
+{
+"job_title": "Consultant Architecte/Expert Technique",
+"company_name": "LEX-PERSONA",
+"responsibilities": "<br>● Signature électronique<br>● Gestion d’archivage Vitam<br>● Générateur de SIP<br>● Création du Socle Technique<br>● Automatisation des builds & runs",
+"city": "",
+"start_date": "03/2021",
+"end_date": "03/2021"
+},
+{
+"job_title": "Consultant Architecte/Expert Technique",
+"company_name": "COMPAGNIE MAROCAINE DES ENERGIES (CME)",
+"responsibilities": "<br>● Dématérialisation des cartes de visites<br>● Extraction Classification & Detection<br>● Portail Orienté Graph<br>● Mailing<br>● ChatBot",
+"city": "",
+"start_date": "09/2021",
+"end_date": "01-2021"
+},
+{
+"job_title": "Expert Technique (Java-J2EE / Angular)",
+"company_name": "DOCAPOSTE",
+"responsibilities": "<br>● Identité numérique (La Poste de France)<br>● Signature électronique des contrats (Contraria)<br>● Vérification identité (AR24)<br>● Contrôle des pièces justificatives (Vialink )<br>● Intégration avec KYC.",
+"city": "",
+"start_date": "03/2021",
+"end_date": "08-2021"
+},
+{
+"job_title": "Consultant Architecte",
+"company_name": "ONEIRO",
+"responsibilities": "<br>● Mise en place de la plateforme OneiroBox<br>● Mise en place du socle technique,<br>● Recherche étude et développement.<br>● Développement",
+"city": "",
+"start_date": "01/2019",
+"end_date": "02/2021"
+},
+{
+"job_title": "Consultant java/J2ee & LifeRay",
+"company_name": "AXA",
+"responsibilities": "<br>● Mise en place de la plateforme LifeRay<br>● Mise en place du socle technique<br>● Développement de la portles pilote",
+"city": "",
+"start_date": "07/2017",
+"end_date": "10/2018"
+},
+{
+"job_title": "Consultant java/J2ee & LifeRay",
+"company_name": "AXA",
+"responsibilities": "<br>● Création d’un interpréteur AIML 2.0<br>● Mise en place d’un chatbot .<br>● Mise en place de la platform AxaBot",
+"city": "",
+"start_date": "10/2018",
+"end_date": ""
+},
+{
+"job_title": "Consultant java/J2ee & AngularJs",
+"company_name": "VALUEIT",
+"responsibilities": "<br>● Développement des activités alfresco<br>● Développement de la partie Fornt-End<br>● Développement de la partie mobile",
+"city": "",
+"start_date": "10/2016",
+"end_date": "07/2017"
+},
+{
+"job_title": "Consultant java/J2ee & AngularJs",
+"company_name": "VALUEIT",
+"responsibilities": "<br>● Développement des services back-End<br>● Développement de la partie Fornt-End<br>● Développement de la partie mobile",
+"city": "",
+"start_date": "07/2017",
+"end_date": ""
+},
+{
+"job_title": "Consultant java/J2ee & AngularJs",
+"company_name": "VALUEIT",
+"responsibilities": "<br>● Développement des services back-End<br>● Développement de la partie Fornt-End & L’application DeskTop.<br>● Programmation de la machine NEW POS 8110",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "Consultant java/J2ee & AngularJs",
+"company_name": "ACCOLADE",
+"responsibilities": "<br>● Audit de tous les composants logiciels<br>● Rédaction et présentation des conclusions et les recommandations<br>● Accompagnement et montée en compétence les équipes « Front & Bac » (Formations, Live Coding ...)",
+"city": "",
+"start_date": "03/2016",
+"end_date": "08/2016"
+},
+{
+"job_title": "Consultant java/J2ee",
+"company_name": "CEGEDIM MAROC",
+"responsibilities": "<br>● Conception et architecture technique.<br>● Développement d’une application mobile.",
+"city": "",
+"start_date": "06/2012",
+"end_date": "03/2016"
+},
+{
+"job_title": "Consultant java/J2ee",
+"company_name": "CEGEDIM MAROC",
+"responsibilities": "<br>● Analyse, conception et développement des nouvelles évolutions.<br>● Référencement technique.<br>● Enrichissement du framework interne du projet<br>● Intégration de l’outil SONAR pour l’audit de code.<br>● Tierce maintenance applicative (TMA).",
+"city": "",
+"start_date": "03/2016",
+"end_date": ""
+},
+{
+"job_title": "Consultant java/J2ee",
+"company_name": "CEGEDIM MAROC",
+"responsibilities": "<br>● Migration des batchs NS-DK vers Spring Batch.<br>● Amélioration des moteurs des batchs.<br>● Tierce maintenance applicative (TMA).",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "Consultant java/J2ee",
+"company_name": "CEGEDIM MAROC",
+"responsibilities": "<br>● Participer au développement des nouveaux besoins & couloire correctif<br>● Refonte de la charte graphique, Création d'un générateur de maquette<br>● Mise en place du socle technique avec AngularJS.",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "Développeur",
+"company_name": "EURAFRIC",
+"responsibilities": "<br>● Conception et développement d’une application mobile de simulation et devis pour l’assurance RAM Watanya.",
+"city": "",
+"start_date": "01/2009",
+"end_date": "06/2012"
+},
+{
+"job_title": "Développeur",
+"company_name": "EURAFRIC",
+"responsibilities": "<br>● Développement d’une application qui permet d’interfacer le système de la BMCE BANK avec le système d’anti blanchiment de BANK AL MAGHRIB.",
+"city": "",
+"start_date": "06/2012",
+"end_date": ""
+},
+{
+"job_title": "Développeur",
+"company_name": "EURAFRIC",
+"responsibilities": "<br>● La refonte du système incident de paiement.",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "Développeur",
+"company_name": "EURAFRIC",
+"responsibilities": "<br>● Amélioration du système de demande chéquier de BMCE BANK",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "Développeur",
+"company_name": "EURAFRIC",
+"responsibilities": "<br>● Réception des commandes au format XML.<br>● Création et validation des commandes.<br>● Intégration des commandes à l’application centrale.",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "Développeur",
+"company_name": "EURAFRIC",
+"responsibilities": "<br>● Extraction des avis d’opéré et les relevés & conversion en format PDF<br>● Chargement des documents dans une base de données<br>● Développement et Intégration dans le site globale le module permettant l’accès sécurisé aux documents.",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "Développeur",
+"company_name": "EURAFRIC",
+"responsibilities": "<br>● Migration des contrats d’alertes existants dans le nouveau système.<br>● Paramétrages et génération des alertes pour les clients de la Bank<br>● Envoi des alertes par Mail et SMS.<br>● Stockage de l’historique des emails envoyés.",
+"city": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"job_title": "",
+"company_name": "CORPORATE SOFTWARE",
+"responsibilities": "<br>● Conception et modélisation de la base de données MySQL<br>● Développement des chartes graphiques et intégration",
+"city": "",
+"start_date": "09/2008",
+"end_date": "01/2009"
+},
+{
+"job_title": "",
+"company_name": "CORPORATE SOFTWARE",
+"responsibilities": "<br>● Interfaçage avec base de données Oracle.<br>● Personnalisation de la charte graphique et intégration avec le site web Corporate.ma.<br>● Paramétrage et internationalisation.",
+"city": "",
+"start_date": "01/2009",
+"end_date": ""
+}
+]
+8. Educations:
+[
+{
+"degree": "Cycle ingénieur Génie Logiciel",
+"institution": "IGA (INSTITUT SUPÉRIEUR DU GÉNIE APPLIQUÉ)",
+"start_year": "2009",
+"end_year": "2011"
+},
+{
+"degree": "Formation Java/J2ee",
+"institution": "Institut Spécialiser dans les métiers de l’Offshoring et les nouvelles Technologies de l’Information.",
+"start_year": "2007",
+"end_year": "2008"
+},
+{
+"degree": "Diplôme Technicien Spécialisé en Développement Informatique",
+"institution": "Institut Spécialisé des Technologies Appliquée)",
+"start_year": "2007",
+"end_year": ""
+},
+{
+"degree": "Baccalauréat Scientifique",
+"institution": "",
+"start_year": "2005",
+"end_year": ""
+}
+]
+9. Languages:
+[
+{
+"language": "Arabe",
+"level": "Langue Maternelle"
+},
+{
+"language": "Français",
+"level": "lu ★★★★ ★★★★<br>écrit ★★★★ ★★★<br>parlé ★★★★ ★★"
+},
+{
+"language": "Anglais",
+"level": "lu ★★★★ ★★★★<br>écrit ★★★★ ★★★<br>parlé ★★★★ ★★"
+}
+]
+10. Skills:
+[
+{
+"skill": "UML",
+"level": ""
+},
+{
+"skill": "MERISE",
+"level": ""
+},
+{
+"skill": "Java",
+"level": ""
+},
+{
+"skill": "C#",
+"level": ""
+},
+{
+"skill": "JavaScript",
+"level": ""
+},
+{
+"skill": "React",
+"level": ""
+},
+{
+"skill": "Angular",
+"level": ""
+},
+{
+"skill": "Sencha (ExtJs)",
+"level": ""
+},
+{
+"skill": "GWT",
+"level": ""
+},
+{
+"skill": "HTML",
+"level": ""
+},
+{
+"skill": "XML",
+"level": ""
+},
+{
+"skill": "XSL",
+"level": ""
+},
+{
+"skill": "Struts",
+"level": ""
+},
+{
+"skill": "JSF",
+"level": ""
+},
+{
+"skill": "Spring",
+"level": ""
+},
+{
+"skill": "Hibernate",
+"level": ""
+},
+{
+"skill": "JPA",
+"level": ""
+},
+{
+"skill": "JAX-RS",
+"level": ""
+},
+{
+"skill": "J2EE",
+"level": ""
+},
+{
+"skill": ".NET",
+"level": ""
+},
+{
+"skill": "Web Service",
+"level": ""
+},
+{
+"skill": "Design pattern",
+"level": ""
+},
+{
+"skill": "ODBC",
+"level": ""
+},
+{
+"skill": "JDBC",
+"level": ""
+},
+{
+"skill": "Windows",
+"level": ""
+},
+{
+"skill": "Linux",
+"level": ""
+},
+{
+"skill": "Docker",
+"level": ""
+},
+{
+"skill": "Ansible",
+"level": ""
+},
+{
+"skill": "Chef",
+"level": ""
+},
+{
+"skill": "Jenkins",
+"level": ""
+},
+{
+"skill": "Rational Rose",
+"level": ""
+},
+{
+"skill": "Power Designer",
+"level": ""
+},
+{
+"skill": "Eclipse",
+"level": ""
+},
+{
+"skill": "Intelij",
+"level": ""
+},
+{
+"skill": "ORACLE",
+"level": ""
+},
+{
+"skill": "POSTGRESS",
+"level": ""
+},
+{
+"skill": "MONGODB",
+"level": ""
+},
+{
+"skill": "SQLSERVER",
+"level": ""
+},
+{
+"skill": "MySQL",
+"level": ""
+},
+{
+"skill": "JasperReports",
+"level": ""
+},
+{
+"skill": "Ireport",
+"level": ""
+},
+{
+"skill": "Websphere",
+"level": ""
+},
+{
+"skill": "Glassfish",
+"level": ""
+},
+{
+"skill": "JBoss",
+"level": ""
+},
+{
+"skill": "TomCat",
+"level": ""
+},
+{
+"skill": "GIT",
+"level": ""
+},
+{
+"skill": "SVN",
+"level": ""
+},
+{
+"skill": "CVS",
+"level": ""
+},
+{
+"skill": "Apache",
+"level": ""
+},
+{
+"skill": "IIS",
+"level": ""
+},
+{
+"skill": "Nginx",
+"level": ""
+},
+{
+"skill": "Java8",
+"level": ""
+},
+{
+"skill": "Jenkins",
+"level": ""
+},
+{
+"skill": "Unix",
+"level": ""
+},
+{
+"skill": "Microfost Asure",
+"level": ""
+},
+{
+"skill": "Git",
+"level": ""
+},
+{
+"skill": "Oracle",
+"level": ""
+},
+{
+"skill": "WebServices",
+"level": ""
+},
+{
+"skill": "KeyClock",
+"level": ""
+},
+{
+"skill": "SpringBatch",
+"level": ""
+},
+{
+"skill": "ApacheCamel",
+"level": ""
+},
+{
+"skill": "xStream",
+"level": ""
+},
+{
+"skill": "Design Pattern",
+"level": ""
+},
+{
+"skill": "Ansible",
+"level": ""
+},
+{
+"skill": "ReactJs",
+"level": ""
+},
+{
+"skill": "ReactNative",
+"level": ""
+},
+{
+"skill": "Redux",
+"level": ""
+},
+{
+"skill": "GoogleCharts",
+"level": ""
+},
+{
+"skill": "Springboot",
+"level": ""
+},
+{
+"skill": "Security",
+"level": ""
+},
+{
+"skill": "JPA",
+"level": ""
+},
+{
+"skill": "WebSocket",
+"level": ""
+},
+{
+"skill": "AOP",
+"level": ""
+},
+{
+"skill": "keycloak",
+"level": ""
+},
+{
+"skill": "RabitMQ",
+"level": ""
+},
+{
+"skill": "Mongodb",
+"level": ""
+},
+{
+"skill": "Tesstract",
+"level": ""
+},
+{
+"skill": "Nginx",
+"level": ""
+},
+{
+"skill": "Docker",
+"level": ""
+},
+{
+"skill": "Jenkins",
+"level": ""
+},
+{
+"skill": "Git",
+"level": ""
+},
+{
+"skill": "Tomcat",
+"level": ""
+},
+{
+"skill": "GoogleMaps",
+"level": ""
+},
+{
+"skill": "push notification",
+"level": ""
+},
+{
+"skill": "Postgress",
+"level": ""
+},
+{
+"skill": "Jasperreport",
+"level": ""
+},
+{
+"skill": "Redis",
+"level": ""
+},
+{
+"skill": "Angular",
+"level": ""
+},
+{
+"skill": "Material",
+"level": ""
+},
+{
+"skill": "PdfMaker",
+"level": ""
+},
+{
+"skill": "Springboot",
+"level": ""
+},
+{
+"skill": "Security",
+"level": ""
+},
+{
+"skill": "JPA",
+"level": ""
+},
+{
+"skill": "Rest",
+"level": ""
+},
+{
+"skill": "MicroServices",
+"level": ""
+},
+{
+"skill": "OpenAPI",
+"level": ""
+},
+{
+"skill": "SpringBatch",
+"level": ""
+},
+{
+"skill": "WebHooks",
+"level": ""
+},
+{
+"skill": "AES256",
+"level": ""
+},
+{
+"skill": "postgres",
+"level": ""
+},
+{
+"skill": "Jnekins",
+"level": ""
+},
+{
+"skill": "Git",
+"level": ""
+},
+{
+"skill": "Sonar",
+"level": ""
+},
+{
+"skill": "Agile",
+"level": ""
+},
+{
+"skill": "SpringBoot",
+"level": ""
+},
+{
+"skill": "ActivMQ",
+"level": ""
+},
+{
+"skill": "JMS",
+"level": ""
+},
+{
+"skill": "ANTLR4",
+"level": ""
+},
+{
+"skill": "WebSocket",
+"level": ""
+},
+{
+"skill": "ReactJS",
+"level": ""
+},
+{
+"skill": "React Native",
+"level": ""
+},
+{
+"skill": "GraphQL",
+"level": ""
+},
+{
+"skill": "MongoDB",
+"level": ""
+},
+{
+"skill": "Multi Tenant",
+"level": ""
+},
+{
+"skill": "OpenAPI",
+"level": ""
+},
+{
+"skill": "JGIT",
+"level": ""
+},
+{
+"skill": "Redis",
+"level": ""
+},
+{
+"skill": "IOT",
+"level": ""
+},
+{
+"skill": "DEV-OPS",
+"level": ""
+},
+{
+"skill": "ANTL4",
+"level": ""
+},
+{
+"skill": "Lucence",
+"level": ""
+},
+{
+"skill": "Kibana",
+"level": ""
+},
+{
+"skill": "ElasticSearch",
+"level": ""
+},
+{
+"skill": "Liferay",
+"level": ""
+},
+{
+"skill": "primesfaces",
+"level": ""
+},
+{
+"skill": "Spring",
+"level": ""
+},
+{
+"skill": "flywaydb",
+"level": ""
+},
+{
+"skill": "DB2",
+"level": ""
+},
+{
+"skill": "Sonar",
+"level": ""
+},
+{
+"skill": "Jmeter",
+"level": ""
+},
+{
+"skill": "Jenkins",
+"level": ""
+},
+{
+"skill": "Angular Bootstrap",
+"level": ""
+},
+{
+"skill": "SpringBoot",
+"level": ""
+},
+{
+"skill": "AIML",
+"level": ""
+},
+{
+"skill": "Apache OpenNLP",
+"level": ""
+},
+{
+"skill": "Messenger4j",
+"level": ""
+},
+{
+"skill": "Slack",
+"level": ""
+},
+{
+"skill": "ReactJs",
+"level": ""
+},
+{
+"skill": "Alfresco activite",
+"level": ""
+},
+{
+"skill": "Ionic2",
+"level": ""
+},
+{
+"skill": "Angular",
+"level": ""
+},
+{
+"skill": "PHP",
+"level": ""
+},
+{
+"skill": "Laravel",
+"level": ""
+},
+{
+"skill": "MySQL",
+"level": ""
+},
+{
+"skill": "Ionic",
+"level": ""
+},
+{
+"skill": "AngularJs",
+"level": ""
+},
+{
+"skill": "Java",
+"level": ""
+},
+{
+"skill": "hibernate",
+"level": ""
+},
+{
+"skill": "flywaydb",
+"level": ""
+},
+{
+"skill": "Spring",
+"level": ""
+},
+{
+"skill": "SpringBoot",
+"level": ""
+},
+{
+"skill": "MySQL",
+"level": ""
+},
+{
+"skill": "ElectronJS",
+"level": ""
+},
+{
+"skill": "C#",
+"level": ""
+},
+{
+"skill": "AngularJs",
+"level": ""
+},
+{
+"skill": "Java",
+"level": ""
+},
+{
+"skill": "Jersey",
+"level": ""
+},
+{
+"skill": "Spring",
+"level": ""
+},
+{
+"skill": "MongoDB",
+"level": ""
+},
+{
+"skill": "Docker",
+"level": ""
+},
+{
+"skill": "Apache Camel",
+"level": ""
+},
+{
+"skill": "AkkA",
+"level": ""
+},
+{
+"skill": "AngularJs",
+"level": ""
+},
+{
+"skill": "Spring-Rest",
+"level": ""
+},
+{
+"skill": "Bootstrap",
+"level": ""
+},
+{
+"skill": "CSS3",
+"level": ""
+},
+{
+"skill": "Hibernate",
+"level": ""
+},
+{
+"skill": "Oracle",
+"level": ""
+},
+{
+"skill": "JQuery",
+"level": ""
+},
+{
+"skill": "Phonegap",
+"level": ""
+},
+{
+"skill": "LiteSQL",
+"level": ""
+},
+{
+"skill": "Android",
+"level": ""
+},
+{
+"skill": "Hibernate 3",
+"level": ""
+},
+{
+"skill": "Spring 3",
+"level": ""
+},
+{
+"skill": "ExtJS",
+"level": ""
+},
+{
+"skill": "Webspher",
+"level": ""
+},
+{
+"skill": "Xstream",
+"level": ""
+},
+{
+"skill": "PL/SQL",
+"level": ""
+},
+{
+"skill": "DevBooster",
+"level": ""
+},
+{
+"skill": "Etaron",
+"level": ""
+},
+{
+"skill": "Web Services",
+"level": ""
+},
+{
+"skill": "Spring Batch",
+"level": ""
+},
+{
+"skill": "ASP.NET",
+"level": ""
+},
+{
+"skill": "C#",
+"level": ""
+},
+{
+"skill": "Struts1",
+"level": ""
+},
+{
+"skill": "OJB",
+"level": ""
+},
+{
+"skill": "Web Services",
+"level": ""
+},
+{
+"skill": "Spring Batch",
+"level": ""
+},
+{
+"skill": "Webspher",
+"level": ""
+},
+{
+"skill": "Struts 2",
+"level": ""
+},
+{
+"skill": "Hibernate 3",
+"level": ""
+},
+{
+"skill": "JPA",
+"level": ""
+},
+{
+"skill": "EJB 3",
+"level": ""
+},
+{
+"skill": "ExtJS",
+"level": ""
+},
+{
+"skill": "POI",
+"level": ""
+},
+{
+"skill": "Webspher",
+"level": ""
+},
+{
+"skill": "PL/SQL",
+"level": ""
+},
+{
+"skill": "JAVA",
+"level": ""
+},
+{
+"skill": "C#",
+"level": ""
+},
+{
+"skill": "UML",
+"level": ""
+},
+{
+"skill": "EJB",
+"level": ""
+},
+{
+"skill": "MDB",
+"level": ""
+},
+{
+"skill": "Servlets",
+"level": ""
+},
+{
+"skill": "JSP",
+"level": ""
+},
+{
+"skill": "JavaMail",
+"level": ""
+},
+{
+"skill": "Devbooster",
+"level": ""
+},
+{
+"skill": "xforms",
+"level": ""
+},
+{
+"skill": "Ireport",
+"level": ""
+},
+{
+"skill": "DynamicFusion",
+"level": ""
+},
+{
+"skill": "XML",
+"level": ""
+},
+{
+"skill": "XSLT",
+"level": ""
+},
+{
+"skill": "Websphére",
+"level": ""
+},
+{
+"skill": "Java",
+"level": ""
+},
+{
+"skill": "Oracle",
+"level": ""
+},
+{
+"skill": "PHP",
+"level": ""
+},
+{
+"skill": "MySQL",
+"level": ""
+},
+{
+"skill": "JDBC",
+"level": ""
+},
+{
+"skill": "JSF",
+"level": ""
+},
+{
+"skill": "Dreamweaver",
+"level": ""
+},
+{
+"skill": "Photoshop",
+"level": ""
+},
+{
+"skill": "SideLaps",
+"level": ""
+},
+{
+"skill": "VisualStudio2005",
+"level": ""
+},
+{
+"skill": "Crystal Reports10",
+"level": ""
+},
+{
+"skill": "SqlServer",
+"level": ""
+},
+{
+"skill": "UML",
+"level": ""
+},
+{
+"skill": "RationelRose",
+"level": ""
+},
+{
+"skill": "JQuery Mobil",
+"level": ""
+},
+{
+"skill": "Phonegap",
+"level": ""
+},
+{
+"skill": "LiteSQL",
+"level": ""
+},
+{
+"skill": "Android",
+"level": ""
+},
+{
+"skill": "Struts 1",
+"level": ""
+},
+{
+"skill": "JDBC2",
+"level": ""
+},
+{
+"skill": "JSP",
+"level": ""
+},
+{
+"skill": "ExtJS",
+"level": ""
+},
+{
+"skill": "Weblogic",
+"level": ""
+},
+{
+"skill": "PL/SQL",
+"level": ""
+},
+{
+"skill": "NS-DK",
+"level": ""
+},
+{
+"skill": "C",
+"level": ""
+},
+{
+"skill": "Spring Batch",
+"level": ""
+},
+{
+"skill": "PL/SQL",
+"level": ""
+},
+{
+"skill": "AngularJs",
+"level": ""
+},
+{
+"skill": "Spring-Rest",
+"level": ""
+},
+{
+"skill": "Bootstrap",
+"level": ""
+},
+{
+"skill": "CSS3",
+"level": ""
+},
+{
+"skill": "Hibernate",
+"level": ""
+},
+{
+"skill": "Oracle",
+"level": ""
+},
+{
+"skill": "JQuery",
+"level": ""
+},
+{
+"skill": "Phonegap",
+"level": ""
+},
+{
+"skill": "LiteSQL",
+"level": ""
+},
+{
+"skill": "Android",
+"level": ""
+},
+{
+"skill": "Hibernate 3",
+"level": ""
+},
+{
+"skill": "Spring 3",
+"level": ""
+},
+{
+"skill": "ExtJS",
+"level": ""
+},
+{
+"skill": "Webspher",
+"level": ""
+},
+{
+"skill": "Xstream",
+"level": ""
+},
+{
+"skill": "PL/SQL",
+"level": ""
+},
+{
+"skill": "DevBooster",
+"level": ""
+},
+{
+"skill": "Etaron",
+"level": ""
+},
+{
+"skill": "Web Services",
+"level": ""
+},
+{
+"skill": "Spring Batch",
+"level": ""
+},
+{
+"skill": "ASP.NET",
+"level": ""
+},
+{
+"skill": "C#",
+"level": ""
+},
+{
+"skill": "Struts1",
+"level": ""
+},
+{
+"skill": "OJB",
+"level": ""
+},
+{
+"skill": "Web Services",
+"level": ""
+},
+{
+"skill": "Spring Batch",
+"level": ""
+},
+{
+"skill": "Webspher",
+"level": ""
+},
+{
+"skill": "Struts 2",
+"level": ""
+},
+{
+"skill": "Hibernate 3",
+"level": ""
+},
+{
+"skill": "JPA",
+"level": ""
+},
+{
+"skill": "EJB 3",
+"level": ""
+},
+{
+"skill": "ExtJS",
+"level": ""
+},
+{
+"skill": "POI",
+"level": ""
+},
+{
+"skill": "Webspher",
+"level": ""
+},
+{
+"skill": "PL/SQL",
+"level": ""
+},
+{
+"skill": "JAVA",
+"level": ""
+},
+{
+"skill": "C#",
+"level": ""
+},
+{
+"skill": "UML",
+"level": ""
+},
+{
+"skill": "EJB",
+"level": ""
+},
+{
+"skill": "MDB",
+"level": ""
+},
+{
+"skill": "Servlets",
+"level": ""
+},
+{
+"skill": "JSP",
+"level": ""
+},
+{
+"skill": "JavaMail",
+"level": ""
+},
+{
+"skill": "Devbooster",
+"level": ""
+},
+{
+"skill": "xforms",
+"level": ""
+},
+{
+"skill": "Ireport",
+"level": ""
+},
+{
+"skill": "DynamicFusion",
+"level": ""
+},
+{
+"skill": "XML",
+"level": ""
+},
+{
+"skill": "XSLT",
+"level": ""
+},
+{
+"skill": "Websphére",
+"level": ""
+}
+]
+11. Interests:
+[
+{
+"interest": "La philosophie"
+}
+]
+12. Social Skills:
+[
+{
+"skill": "Communication"
+},
+{
+"skill": "Teamwork"
+}
+]
+13. Certifications:
+[]
+14. Projects:
+[
+{
+"project_name": "CardPrdo",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "Connector Vitam",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "SmartCMR",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "WeCollect",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "Projet Entrée en relation",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "Projet OneiroBox",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "Projet AxaWeb",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "Projet AxaBot",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "Projet RMA-Flows",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
+"project_name": "Projet SahlEdu",
+"description": "",
+"start_date": "",
+"end_date": ""
+},
+{
