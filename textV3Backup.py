@@ -21,10 +21,6 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import ProcessPoolExecutor
 import fitz
 from collections import Counter
-import mimetypes
-import threading
-
-upload_lock = threading.Lock()
 
 
 # Load the environment variables
@@ -695,7 +691,6 @@ class salim:
             return "Unknown"
 
 
-
     def extract_infos_from_cv_v2(self, cv_input, return_summary=False, file_name=""):
         #with open("cv_text.txt", "w+") as f:
         #    f.write(cv_text)
@@ -719,7 +714,7 @@ class salim:
         3. Phone: Extract the phone number of the candidate.
         4. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
         5. City: Extract the city of the candidate. If no city is found, write an empty string ''.
-        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate experiences within the same company but with different time periods. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, leave it empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said, not in other sections, the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique" or similar titles, written in the language of the resume). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
+        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate experiences within the same company but with different time periods. in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing skills in the experience text (only in the text of said experience, not in other sections), put it here (it's usually preceeded with a title such as "Technical Skills", "Skills", "Technical Environment", or similar titles, in the language of the resume). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
         7. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
         8. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
         9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to the language of the resume if they're not already (you can identify the language of the resume from experiences). If no language is found, write an empty list [].
@@ -740,18 +735,15 @@ class salim:
         if isinstance(cv_input, str):
             combined_prompt = f"{combined_prompt}\nCV Text:\n{cv_input}"
             input_files = None
-        elif file_name.endswith(".pdf"):
-            combined_prompt = combined_prompt.replace("the CV text as they are", "the provided CV pdf as it is")
-            combined_prompt = f"{combined_prompt}\nCV PDF:"
-            #uploaded_files.append(genai.upload_file(path=file_name))
-            with upload_lock:
-                uploaded_files.append(genai.upload_file(path=file_name))
-            #for image_path in cv_input:
+        elif isinstance(cv_input, list):
+            combined_prompt = combined_prompt.replace("the CV text as they are", "the provided CV images as they are")
+            combined_prompt = f"{combined_prompt}\nCV Images:"
+            for image_path in cv_input:
                 # with open(image_path, "rb") as f:
                 #     image = f.read()
                 # uploaded_file = base64.b64encode(image).decode("utf-8")
                 # uploaded_files.append(f"data:image/jpeg;base64,{uploaded_file}")
-                #uploaded_files.append(genai.upload_file(path=image_path))
+                uploaded_files.append(genai.upload_file(path=image_path))
             # image_references = '\n'.join([f'{file}\n' for file in uploaded_files])
             # combined_prompt += f"\n{image_references}"
             uploaded_files.append(combined_prompt)
@@ -1266,30 +1258,29 @@ class salim:
 
         if file.filename.endswith(".pdf"):
             # Create the 'screens' directory if it doesn't exist
-            #screens_dir = 'screens'
-            #if not os.path.exists(screens_dir):
-            #    os.makedirs(screens_dir)
+            screens_dir = 'screens'
+            if not os.path.exists(screens_dir):
+                os.makedirs(screens_dir)
             # Use fitz to convert PDF pages to images
-            #doc = fitz.open(file.filename)
-            # image_paths = []
-            #for page_number in range(len(doc)):
-            #    page = doc.load_page(page_number)
-            #    pix = page.get_pixmap()
-            #    image_path = f"{screens_dir}/page_{page_number + 1}.png"
-            #    pix.save(image_path)
-            #    image_paths.append(image_path)
-            #doc.close()
+            doc = fitz.open(file.filename)
+            image_paths = []
+            for page_number in range(len(doc)):
+                page = doc.load_page(page_number)
+                pix = page.get_pixmap()
+                image_path = f"{screens_dir}/page_{page_number + 1}.png"
+                pix.save(image_path)
+                image_paths.append(image_path)
+            doc.close()
 
             # Set cv_input to the list of image paths
-            #cv_input = image_paths
-            cv_input = file
+            cv_input = image_paths
 
         elif file.filename.endswith(".docx"):
             # Extract text from the DOCX as before
             cv_input = self.get_docx_text(file.filename)
+
         else:
             return {"error": "The uploaded file is not a PDF or a DOCX file"}
-
         # Pass cv_input to extract_infos_from_cv_v2
         extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
 

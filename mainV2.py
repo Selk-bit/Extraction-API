@@ -61,12 +61,16 @@ SUPPORTED_MIME_TYPES = {
 }
 
 
+#def process_file(file, translate, target_language):
+#    return cv.extract_info(file, translate, return_summary=False, target_language=target_language)
+
+
 def process_file(file, translate, target_language):
     extracted_info = cv.extract_info(file, translate, return_summary=False, target_language=target_language)
-
+    
     # Check if "name", "email", and "work" keys are present and not empty
     required_keys = ["name", "email", "work"]
-    if not all(key in extracted_info and extracted_info[key] for key in required_keys):
+    if not all(key in extracted_info for key in required_keys):
         # Return an object with only the "filename" and "error" keys
         return {
             "filename": file.filename,
@@ -77,6 +81,7 @@ def process_file(file, translate, target_language):
         }
     else:
         return extracted_info
+
 
 def process_translation(data, target_language):
     return cv.translate_json(data, target_language)
@@ -470,10 +475,6 @@ async def get_report():
         return JSONResponse(content={"error": f"Failed to retrieve report: {str(e)}"}, status_code=500)
 
 
-@app.get("/")
-async def keep_alive():
-    return JSONResponse(content={"message": "App is alive!"}, status_code=200)
-
 
 if __name__ == '__main__':
-    uvicorn.run("mainV2:app", port=1496)
+    uvicorn.run("mainV2:app", host="0.0.0.0", port=1496, reload=True)

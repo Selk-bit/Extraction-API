@@ -87,7 +87,7 @@ class ExtractCVInfos:
         return count_response.total_tokens
         # return len(self.encoder.encode(text))
 
-        
+
     def calculate_cost(self, tokens, is_input):
         if tokens <= 128000:
             if is_input:
@@ -343,6 +343,174 @@ class ExtractCVInfos:
         return first_column_headers, second_column_headers
 
 
+
+    def extract_columns_from_pdf_v2(self, pdf_file, second_column_x0, 
+                                tolerance=3, vertical_tolerance=1, 
+                                space_threshold=2, space_diff_threshold=50,
+                                word_spacing_threshold=3):
+
+        first_column_text = []
+        second_column_text = []
+
+        fitz_text_total = ""
+        pdfplumber_text_total = ""
+
+        # Extract text using both pdfplumber (chars-based) and fitz
+        import pdfplumber
+        import fitz
+
+        with pdfplumber.open(pdf_file) as pdf:
+            cumulative_height = 0  
+            doc_fitz = fitz.open(pdf_file)
+
+            all_chars = []
+
+            for page_num, page in enumerate(pdf.pages):
+                # Extract chars from this page
+                page_chars = page.chars
+
+                # Add chars to pdfplumber_text_total and store their coordinates
+                for c in page_chars:
+                    pdfplumber_text_total += c['text']
+                    c['y0'] = c['top'] + cumulative_height
+                    c['y1'] = c['bottom'] + cumulative_height
+                    all_chars.append({
+                        'text': c['text'],
+                        'x0': c['x0'],
+                        'x1': c['x1'],
+                        'y0': c['y0'],
+                        'y1': c['y1'],
+                        'page_num': page_num,
+                        'page_width': page.width,
+                        'page_height': page.height
+                    })
+
+                # Extract fitz text for comparison
+                fitz_page_text = doc_fitz[page_num].get_text("text")
+                fitz_text_total += fitz_page_text
+
+                # Update cumulative_height after processing this page
+                cumulative_height += page.height
+
+        # Compare space counts
+        num_spaces_pdfplumber = pdfplumber_text_total.count(' ')
+        num_spaces_fitz = fitz_text_total.count(' ')
+
+        use_fitz = abs(num_spaces_pdfplumber - num_spaces_fitz) > space_diff_threshold
+
+        if use_fitz:
+            print(f"Using fitz's text due to space difference: {num_spaces_pdfplumber} vs {num_spaces_fitz}")
+            spans = self.extract_text_spans(pdf_file)
+        else:
+            print(f"Using pdfplumber's chars due to minimal space difference: {num_spaces_pdfplumber} vs {num_spaces_fitz}")
+            # If using pdfplumber chars, we must group them into words.
+
+            # Sort all characters first by y0, then by x0
+            all_chars.sort(key=lambda c: (c['y0'], c['x0']))
+
+            # Group chars into lines
+            lines = []
+            current_line = []
+            last_y = None
+
+            for c in all_chars:
+                if not current_line:
+                    current_line.append(c)
+                    last_y = c['y0']
+                else:
+                    # Check if char is on a new line by vertical difference
+                    if abs(c['y0'] - last_y) > vertical_tolerance:
+                        lines.append(current_line)
+                        current_line = [c]
+                    else:
+                        current_line.append(c)
+                    last_y = c['y0']
+
+            # Add the last line if present
+            if current_line:
+                lines.append(current_line)
+
+            # Now group chars in each line into words
+            spans = []
+            for line in lines:
+                line.sort(key=lambda c: c['x0'])
+                current_word_chars = []
+                for i, ch in enumerate(line):
+                    if not current_word_chars:
+                        current_word_chars.append(ch)
+                    else:
+                        prev_char = current_word_chars[-1]
+                        gap = ch['x0'] - prev_char['x1']
+                        if gap > word_spacing_threshold:
+                            # Finish the current word
+                            word_text = "".join([c['text'] for c in current_word_chars])
+                            word_x0 = current_word_chars[0]['x0']
+                            word_x1 = current_word_chars[-1]['x1']
+                            word_y0 = min(c['y0'] for c in current_word_chars)
+                            word_y1 = max(c['y1'] for c in current_word_chars)
+                            spans.append({
+                                'text': word_text,
+                                'x0': word_x0,
+                                'x1': word_x1,
+                                'y0': word_y0,
+                                'y1': word_y1,
+                                'page_num': current_word_chars[0]['page_num'],
+                                'page_width': current_word_chars[0]['page_width'],
+                                'page_height': current_word_chars[0]['page_height']
+                            })
+                            # Start a new word
+                            current_word_chars = [ch]
+                        else:
+                            current_word_chars.append(ch)
+
+                # Add the last word in the line
+                if current_word_chars:
+                    word_text = "".join([c['text'] for c in current_word_chars])
+                    word_x0 = current_word_chars[0]['x0']
+                    word_x1 = current_word_chars[-1]['x1']
+                    word_y0 = min(c['y0'] for c in current_word_chars)
+                    word_y1 = max(c['y1'] for c in current_word_chars)
+                    spans.append({
+                        'text': word_text,
+                        'x0': word_x0,
+                        'x1': word_x1,
+                        'y0': word_y0,
+                        'y1': word_y1,
+                        'page_num': current_word_chars[0]['page_num'],
+                        'page_width': current_word_chars[0]['page_width'],
+                        'page_height': current_word_chars[0]['page_height']
+                    })
+
+        # Sort spans by y and then by x
+        spans.sort(key=lambda s: (s['y0'], s['x0']))
+
+        # Helper for concatenation
+        def concatenate_text(current_span, next_span, text_list):
+            text_list.append(current_span['text'])
+            if next_span:
+                # Check if we need a newline
+                if abs(next_span['y0'] - current_span['y0']) > vertical_tolerance:
+                    text_list.append("\n")
+                else:
+                    gap_between_spans = next_span['x0'] - current_span['x1']
+                    if gap_between_spans > space_threshold:
+                        text_list.append(" ")
+
+        # Assign spans to columns and concatenate text
+        for i, span in enumerate(spans):
+            next_span = spans[i+1] if i+1 < len(spans) else None
+            if span['x0'] < second_column_x0 - tolerance:
+                concatenate_text(span, next_span, first_column_text)
+            else:
+                concatenate_text(span, next_span, second_column_text)
+
+        first_column_content = "".join(first_column_text).strip()
+        second_column_content = "".join(second_column_text).strip()
+
+        return first_column_content, second_column_content
+
+
+
     def extract_columns_from_pdf(self, pdf_file, second_column_x0, tolerance=3, vertical_tolerance=1, space_threshold=2,
                                 space_diff_threshold=50):
         first_column_text = []
@@ -434,6 +602,7 @@ class ExtractCVInfos:
 
     def get_pdf_text_v2(self, pdf_path):
         text = ""
+        unique_annotations = set()
         with pdfplumber.open(pdf_path) as pdf:
             for page in pdf.pages:
                 text += page.extract_text()
@@ -442,6 +611,14 @@ class ExtractCVInfos:
                     for row in table:
                         filtered_row = [element for element in row if element is not None]
                         text += " | ".join(filtered_row) + "\n"
+
+                annotations = page.annots
+                if annotations:
+                    for annot in annotations:
+                        uri = annot.get("uri")
+                        if uri and uri not in unique_annotations:
+                            unique_annotations.add(uri)
+                            text = f"{text}{uri}\n"
         return text
 
 
@@ -483,11 +660,17 @@ class ExtractCVInfos:
         text = textract.process(docx_path, method='docx').decode('utf-8')
         return text
 
+
+    def get_doc_text(self, doc_path):
+        text = textract.process(doc_path, method='catdoc').decode('utf-8')
+        return text
+
+
     # Function to load the conversational chain
     def get_conversational_chain(self):
         genai.configure(api_key=self.api_key)
 
-        model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3, max_tokens=8192)
+        model = ChatGoogleGenerativeAI(model="gemini-1.5-flash-002", temperature=0, max_tokens=8192)
 
         prompt_template = """
         Answer the question as detailed as possible from the provided context, and make sure to provide all the details,
@@ -499,7 +682,6 @@ class ExtractCVInfos:
 	DON'T ANSWER WITH A JSON FORMAT IN A TEXT EDITOR, BUT RATHER, ANSWER WITH THE FOLLOWING FORMAT, AND KEEP TITLES
         Answer:
         """
-
         prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
         chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
         return chain
@@ -542,7 +724,7 @@ class ExtractCVInfos:
         html_output = []
         buffer = []
         in_list = False
-
+        text = re.sub(r"(?<=#end#)[^a-zA-Z]+(?=#start#)", "", text)
         # Split by delimiter while keeping #start# and #end# as separate elements
         segments = re.split(r"(#start#|#end#)", text)
 
@@ -553,7 +735,7 @@ class ExtractCVInfos:
             if segment == "#start#":
                 # Open a new <ul> if not already inside one
                 if not in_list:
-                    if buffer and any(s.strip() for s in buffer):
+                    if buffer and any(s.strip() for s in buffer) and any(s.isalpha() for s in buffer):
                         # Add remaining buffered text as <p> if non-empty
                         html_output.append(f"<p>{' '.join(buffer).strip()}</p>")
                         buffer = []
@@ -565,7 +747,9 @@ class ExtractCVInfos:
             elif segment == "#end#":
                 # Add the buffered content as an <li>
                 if buffer:
-                    html_output.append(f"<li>{' '.join(buffer).strip()}</li>")
+                    li = f"<li>{' '.join(buffer).strip()}"
+                    li = f"{li}</li>" if li.endswith('.') else f"{li}.</li>"
+                    html_output.append(li)
                     buffer = []
 
                 # Check if there is no immediate #start# after this #end#
@@ -581,7 +765,7 @@ class ExtractCVInfos:
                 i += 1
 
         # Wrap any remaining non-list content in <p>
-        if buffer and any(s.strip() for s in buffer):
+        if buffer and any(s.strip() for s in buffer) and any(s.isalpha() for s in buffer):
             html_output.append(f"<p>{' '.join(buffer).strip()}</p>")
 
         # Join all parts of the HTML output
@@ -622,6 +806,7 @@ class ExtractCVInfos:
 
         # Return the translation or a default message if the language code is not in the dictionary
         return translations.get(language_code, 'Skills')
+
 
     def escape_unescaped_quotes(self, json_str):
         # Regular expression to match the start of a value in a JSON key-value pair
@@ -686,34 +871,36 @@ class ExtractCVInfos:
         #with open("cv_text.txt", "w+") as f:
         #    f.write(cv_text)
         extracted_info = {}
+        #with open("request_prod.txt", "w+") as f:
+        #    f.write(cv_text)
         # Construct a single prompt with all the extraction instructions
         language = self.detect_predominant_language(cv_text)
         combined_prompt = f"""
         Extract the following information from the CV text as they are without any translation, following this format as it is, keeping the numbering, and make sure to correctly format json objects:
 
-        1. Title: Extract the current occupation of the candidate (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
-        2. Name: Extract the name of the candidate (Remove unnecessary spaces within the name if found, and leave only spaces seperating first name from middle name, if there was a middle name, from last name, and correct capitalization).
-        3. Email: Extract the email of the candidate.
-        4. Phone: Extract the phone number of the candidate.
-        5. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
-        6. City: Extract the city of the candidate. If no city is found, write an empty string ''.
-        7. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's probably a new experience, you should seperate experiences within the same company but with different time periods. in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences shouldn't start with transition words such as "Additionally", "Subsequently", or similar transitional adverbs, they should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing skills in the experience text (only in the text of said experience, not in other sections), put it here (it's usually preceeded with a title such as "Technical Skills", "Skills", "Technical Environment", or similar titles, written in {language}). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest.
-        8. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
-        9. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
-        10. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to language of the CV (use work responsibilities to detect which language the cv is written in). If no language is found, write an empty list [].
-        11. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
-        12. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
-        13. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language})
-        14. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date, and translate certification to language of the CV (use work responsibilities to detect which language the resume is written with), and if no certification is found, write an empty list [].
-        15. Projects: Extract all projects in JSON format as a list containing project_name, description, start_date, and end_date, and if no project is found, write an empty list [].
-        16. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
-        17. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
-        18. Headline: Extract the current occupation of the candidate, it should be the same as the title, if it's not available, deduce it from other presented info (an example of the oppucation would be "web developer"). 
-        19. Summary: If a summary exists in the Resume already, extract it, you can find it either at the beginning or at the end, take the longest one. (if no summary is found in Resume data, then leave an empty string)
+        1. Name: Extract the name of the candidate (Remove unnecessary spaces within the name if found, and leave only spaces seperating first name from middle name, if there was a middle name, from last name, and correct capitalization).
+        2. Email: Extract the email of the candidate.
+        3. Phone: Extract the phone number of the candidate.
+        4. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
+        5. City: Extract the city of the candidate. If no city is found, write an empty string ''.
+        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate experiences within the same company but with different time periods. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, leave it empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said, not in other sections, the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique" or similar titles, written in {language}). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
+        7. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
+        8. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
+        9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to {language} if they're not already. If no language is found, write an empty list [].
+        10. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
+        11. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
+        12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text)
+        13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to {language}, and if no certification is found, write an empty list [].
+        14. Projects: Extract all projects in JSON format as a list containing project_name, description, start_date, and end_date, the description must contain any text you can find talking about the project, if the text contains bullet point tasks, add the string "#start#" at the start of each task sentence, and "#end#" at the end of each task sentence. if the text doesn't contain bulltet point, or parts of the text do not contain bullet points, write them as they are. if no project is found, write an empty list [].
+        15. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
+        16. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
+        17. Headline: Extract the current occupation of the candidate, if it wasn't explicitly mentioned, deduce it from the most recent work experience (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
+        18. Summary: If a summary exists in the Resume already, extract it, you can find it either at the beginning or at the end, take the longest one. (if no summary is found in Resume data, then leave an empty string)
         CV Text:
         {cv_text}
 
-        Please process the above tasks efficiently to minimize response time, and don't wrap the entire response in a json object, but follow the above format.
+
+        Please process the above tasks efficiently to minimize response time.
         """
 
         try:
@@ -723,32 +910,30 @@ class ExtractCVInfos:
             language = None
             if response:
                 response_text = response["output_text"].strip()
-                #with open("response_prod.txt", "w+") as f:
+                #with open("response_test.txt", "w+") as f:
                 #   f.write(response_text)
                 # Define the labels we expect in the response
                 labels = {
-                    "1. Title:": "title",
-                    "2. Name:": "name",
-                    "3. Email:": "email",
-                    "4. Phone:": "phone",
-                    "5. Age:": "age",
-                    "6. City:": "city",
-                    "7. Work Experiences:": "work",
-                    "8. Years Of Experience:": "yoe",
-                    "9. Educations:": "educations",
-                    "10. Languages:": "languages",
-                    "11. Skills:": "skills",
-                    "12. Interests:": "interests",
-                    "13. Social Skills:": "social",
-                    "14. Certifications:": "certifications",
-                    "15. Projects:": "projects",
-                    "16. Volunteering:": "volunteering",
-                    "17. References:": "references",
-                    "18. Headline:": "headline",
-                    "19. Summary:": "summary",
+                    "1. Name:": "name",
+                    "2. Email:": "email",
+                    "3. Phone:": "phone",
+                    "4. Age:": "age",
+                    "5. City:": "city",
+                    "6. Work Experiences:": "work",
+                    "7. Years Of Experience:": "yoe",
+                    "8. Educations:": "educations",
+                    "9. Languages:": "languages",
+                    "10. Skills:": "skills",
+                    "11. Interests:": "interests",
+                    "12. Social Skills:": "social",
+                    "13. Certifications:": "certifications",
+                    "14. Projects:": "projects",
+                    "15. Volunteering:": "volunteering",
+                    "16. References:": "references",
+                    "17. Headline:": "headline",
+                    "18. Summary:": "summary",
                 }
 
-                # Extract data based on the expected labels
                 for label, key in labels.items():
                     start_idx = response_text.find(label)
                     if start_idx != -1:
@@ -774,11 +959,20 @@ class ExtractCVInfos:
                                         temp_work[key_work]["responsibilities"] = self.convert_to_html(work["responsibilities"]) if self.convert_to_html(work["responsibilities"]).replace("\n", "") else ""
                                         #temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}<p>{temp_work[key_work]["skills"]}</p></br>" if temp_work[key_work]["skills"] != "" else temp_work[key_work]["responsibilities"]
                                         temp_work[key_work]["environnement"] = temp_work[key_work]["skills"]
+                                        del temp_work[key_work]["skills"]
                                         if temp_work[key_work]["responsibilities"] and not language:
                                             language = detect(temp_work[key_work]["responsibilities"])
-                                        temp_work[key_work]["responsibilities"] = (f"<p><b>{self.translate_responsibilities(language)}:</b></p>{temp_work[key_work]['responsibilities']}")
+                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}"
                                     temp_work = self.merge_jobs(temp_work)
                                     section_text = json.dumps(temp_work)
+                                if key == "projects":
+                                    section_text = re.sub(r'', '', section_text)
+                                    section_text = section_text.replace("\\n", "").replace("\n", "")
+                                    section_text = self.replace_unbalanced_quote(section_text)
+                                    temp_project = json.loads(section_text)
+                                    for key_project, project in enumerate(temp_project):
+                                        temp_project[key_project]["description"] = self.convert_to_html(project["description"]) if self.convert_to_html(project["description"]).replace("\n", "") else ""
+                                    section_text = json.dumps(temp_project)
                                 extracted_info[key] = json.loads(section_text.replace("\n", "").replace("\r", "").replace("<br><br>", "<br>"))
                                 if key == "interests":
                                     processed_interests = []
@@ -796,7 +990,7 @@ class ExtractCVInfos:
                                     extracted_info[key] = processed_interests
                             except Exception as e:
                                 with open("response_prod.txt", "w+") as f:
-                                    f.write(response_text)
+                                    f.write(section_text)
                                 print(e)
                                 print(key)
                                 extracted_info[key] = []  # Handle JSON decode error
@@ -1153,6 +1347,41 @@ class ExtractCVInfos:
         return spans
 
 
+
+    def get_pdf_text_v3(self, pdf_path):
+        all_spans = self.extract_text_spans(pdf_path)
+
+        # Detect the largest header from the predefined list and its font properties
+        largest_header_span = self.detect_largest_header_and_properties(all_spans)
+
+        if not largest_header_span:
+            print("No headers detected from the predefined list.")
+            return
+
+        # Extract header font properties
+        header_font_properties = (
+            largest_header_span['font_size'], largest_header_span['font_color'])
+
+        # Detect other headers with the same font properties
+        headers = self.detect_other_headers(all_spans, header_font_properties)
+
+        # Adjust headers' x positions based on the content under them
+        adjusted_headers = self.adjust_header_x_position(all_spans, headers)
+
+        # Group headers into columns by identifying natural breaks in x-positions
+        first_column_headers, second_column_headers = self.group_headers_by_columns(adjusted_headers)
+
+        # Get the x0 of the second column
+        second_column_x0 = min(header['x0'] for header in second_column_headers) if second_column_headers else None
+
+        # Extract the content of the first and second columns
+        first_column_content, second_column_content = self.extract_columns_from_pdf_v2(pdf_path, second_column_x0)
+
+        # Print the first and second column content
+        return f"{first_column_content}\n{second_column_content}"
+
+
+
     def detect_split_based_on_header_x_positions(self, spans, x_difference_threshold=50, min_proportion=0.2, max_proportion=0.5):
         """
         Detects if a resume has a vertical split based on the x-positions of headers and their distribution.
@@ -1167,16 +1396,14 @@ class ExtractCVInfos:
         - bool: True if a vertical split is detected based on x-positions of headers, False otherwise.
         """
         # Step 1: Detect the largest valid header font size used more than 'min_usage' times
-        header_font_properties = self.detect_header_font_properties(spans)
+        header_font_properties = self.detect_largest_header_and_properties(spans)
         if not header_font_properties:
             return False  # No headers found
 
         # Step 2: Collect the x-positions of headers (those with the detected header font properties)
         header_x_positions = [
-            span['x'] for span in spans if
-            abs(span['font_size'] - header_font_properties[0]) <= 0.2 and
-            span['font_flags'] == header_font_properties[1] and
-            span['font_name'] == header_font_properties[2]
+            span['bbox'][0] for span in spans if
+            abs(span['font_size'] - header_font_properties['font_size']) <= 0.2
         ]
 
         if len(header_x_positions) < 2:
@@ -1213,6 +1440,7 @@ class ExtractCVInfos:
         return False  # No vertical split detected
 
 
+    # Function to extract information from passed file
     def extract_info(self, file, translate, return_summary=False, target_language="EN-US"):
         # Save the uploaded file temporarily
         with open(file.filename, "wb") as f:
@@ -1221,16 +1449,25 @@ class ExtractCVInfos:
         # Check if the uploaded file is a PDF
         if file.filename.endswith(".pdf"):
             # Extract text from the PDF
-            spans = self.extract_spans_from_pdf(file.filename)
+            spans = self.extract_text_spans(file.filename)
             split_detected = self.detect_split_based_on_header_x_positions(spans)
             if split_detected:
-                cv_text = self.get_pdf_text(file.filename)
+                cv_text = self.get_pdf_text_v3(file.filename)
+                #cv_text_v2 = self.get_pdf_text_v2(file.filename)
+
+                #length_diff_threshold = 0.5
+                #if len(cv_text_v2) > len(cv_text) * (1 + length_diff_threshold):
+                #    cv_text = cv_text_v2
             else:
                 cv_text = self.get_pdf_text_v2(file.filename)
 
         elif file.filename.endswith(".docx"):
             # Extract text from the DOCX
             cv_text = self.get_docx_text(file.filename)
+
+        elif file.filename.endswith(".doc"):
+            # Extract text from the DOCX
+            cv_text = self.get_doc_text(file.filename)
 
         else:
             return {"error": "The uploaded file is not a PDF or a Docx file"}
@@ -1254,8 +1491,7 @@ class ExtractCVInfos:
         # Remove the uploaded file from the root directory
         os.remove(file.filename)
 
-        return cleaned_info
-
+        return cleaned_info     
 
     # Function to extract a summary from the passed file
     def extract_summary(self, cv_text, target_language="EN-US"):

@@ -1,4 +1,5 @@
 import google.generativeai as genai
+from fastapi.responses import JSONResponse, FileResponse
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
@@ -10,7 +11,9 @@ import textract
 import json
 import os
 import re
-from langdetect import detect
+from langdetect import detect, DetectorFactory
+from langdetect.lang_detect_exception import LangDetectException
+from collections import Counter
 from datetime import datetime, timezone
 import threading
 from statistics import mean
@@ -24,24 +27,47 @@ load_dotenv()
 
 pre_defined_headers = [
     # English
-    "education", "work experience", "experiences", "skills", "competences", "languages", "projects",
-    "certifications", "awards", "references", "interests",
+    "education", "educational background", "academic background", "work experience", "professional experience", "employment history",
+    "job history", "experience", "experiences", "skills", "skill set", "competences", "competencies", "abilities",
+    "technical skills", "professional skills", "soft skills", "languages", "language proficiency", "projects", "personal projects",
+    "certifications", "certificates", "credentials", "awards", "achievements", "honors", "recognitions", "accomplishments",
+    "references", "referees", "interests", "hobbies", "activities", "extracurricular activities", "personal interests",
+    "summary", "profile", "objective", "professional summary", "personal statement", "career objective",
+    "volunteer experience", "volunteering", "volunteer work", "training", "workshops", "courses", "publications",
+    "presentations", "affiliations", "memberships", "professional memberships",
 
     # French
-    "éducation", "expérience professionnelle", "expériences", "compétences", "langues", "projets",
-    "certifications", "références", "centres d'intérêt",
+    "éducation", "formation", "formation académique", "expérience professionnelle", "expériences professionnelles",
+    "historique professionnel", "expériences", "compétences", "compétences techniques", "compétences professionnelles",
+    "compétences interpersonnelles", "capacités", "aptitudes", "langues", "maîtrise des langues", "projets",
+    "projets personnels", "certifications", "certificats", "accréditations", "récompenses", "distinctions",
+    "honneurs", "réalisations", "références", "référents", "centres d'intérêt", "intérêts", "loisirs",
+    "activités", "activités extra-scolaires", "profil", "objectif", "résumé", "déclaration personnelle",
+    "objectif de carrière", "bénévolat", "volontariat", "travail bénévole", "formations", "ateliers", "cours",
+    "publications", "présentations", "affiliations", "adhésions", "membres professionnels",
 
     # Spanish
-    "educación", "experiencia laboral", "experiencias", "habilidades", "competencias", "idiomas",
-    "proyectos", "certificaciones", "referencias", "intereses",
+    "educación", "formación", "historial académico", "experiencia laboral", "experiencia profesional", "experiencias laborales",
+    "experiencias", "habilidades", "conocimientos", "competencias", "competencias técnicas", "competencias profesionales",
+    "habilidades interpersonales", "idiomas", "dominio de idiomas", "proyectos", "proyectos personales", "certificaciones",
+    "certificados", "credenciales", "premios", "logros", "honores", "reconocimientos", "referencias", "intereses",
+    "actividades", "actividades extracurriculares", "perfil", "objetivo", "resumen profesional", "declaración personal",
+    "objetivo profesional", "voluntariado", "experiencia de voluntariado", "entrenamiento", "cursos", "talleres",
+    "publicaciones", "presentaciones", "afiliaciones", "membresías", "membresías profesionales",
 
     # German
-    "bildung", "berufserfahrung", "erfahrungen", "fähigkeiten", "kompetenzen", "sprachen",
-    "projekte", "zertifizierungen", "referenzen", "interessen"
+    "bildung", "ausbildung", "akademischer hintergrund", "berufserfahrung", "berufliche erfahrung", "beruflicher werdegang",
+    "arbeitserfahrung", "erfahrungen", "fähigkeiten", "kompetenzen", "kompetenzen technische", "berufliche kompetenzen",
+    "soft skills", "sprachen", "sprachkenntnisse", "projekte", "persönliche projekte", "zertifizierungen", "zertifikate",
+    "akkreditierungen", "auszeichnungen", "preise", "anerkennungen", "ehren", "leistungen", "referenzen", "interessen",
+    "hobbys", "aktivitäten", "extrakurrikulare aktivitäten", "profil", "zielsetzung", "berufsziel", "persönliches profil",
+    "freiwilligenarbeit", "ehrenamtliche arbeit", "praktika", "kurse", "fortbildungen", "publikationen", "präsentationen",
+    "mitgliedschaften", "berufliche mitgliedschaften"
 ]
 
 # Convert all headers to lowercase for case-insensitive matching
 pre_defined_headers = [header.lower() for header in pre_defined_headers]
+DetectorFactory.seed = 0
 
 class ExtractCVInfos:
     def __init__(self):
@@ -235,13 +261,18 @@ class ExtractCVInfos:
         return all_spans
 
 
+    def strip_special_characters(self, text):
+        # Keep only Latin letters (including accented characters) and spaces
+        return re.sub(r'[^a-zA-ZÀ-ÖØ-öø-ÿ\s]', '', text)
+
+
     # Function to detect the largest header from the predefined list and find its properties
     def detect_largest_header_and_properties(self, spans):
         largest_header_span = None
 
         # Step 1: Identify spans that match predefined headers
         for span in spans:
-            if span['text'] in pre_defined_headers:
+            if self.strip_special_characters(span['text']).strip().lower() in pre_defined_headers:
                 if largest_header_span is None or span['font_size'] > largest_header_span['font_size']:
                     largest_header_span = span
 
@@ -309,7 +340,6 @@ class ExtractCVInfos:
         # Assign headers based on the break
         first_column_headers = headers[:break_index]
         second_column_headers = headers[break_index:]
-
         return first_column_headers, second_column_headers
 
 
@@ -444,7 +474,6 @@ class ExtractCVInfos:
         # Extract the content of the first and second columns
         first_column_content, second_column_content = self.extract_columns_from_pdf(pdf_path, second_column_x0)
 
-        print(f"{first_column_content}\n{second_column_content}")
         # Print the first and second column content
         return f"{first_column_content}\n{second_column_content}"
 
@@ -470,6 +499,7 @@ class ExtractCVInfos:
 	DON'T ANSWER WITH A JSON FORMAT IN A TEXT EDITOR, BUT RATHER, ANSWER WITH THE FOLLOWING FORMAT, AND KEEP TITLES
         Answer:
         """
+
         prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
         chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
         return chain
@@ -504,11 +534,163 @@ class ExtractCVInfos:
         return merged_jobs
 
 
+    def convert_to_html(self, text):
+        # Check if there are no #start# and #end# tags in the text
+        if "#start#" not in text and "#end#" not in text:
+            return f"<p>{text.strip()}</p>"
+
+        html_output = []
+        buffer = []
+        in_list = False
+        text = re.sub(r"(?<=#end#)[^a-zA-Z]+(?=#start#)", "", text)
+        # Split by delimiter while keeping #start# and #end# as separate elements
+        segments = re.split(r"(#start#|#end#)", text)
+
+        i = 0
+        while i < len(segments):
+            segment = segments[i].strip()
+
+            if segment == "#start#":
+                # Open a new <ul> if not already inside one
+                if not in_list:
+                    if buffer and any(s.strip() for s in buffer) and any(s.isalpha() for s in buffer):
+                        # Add remaining buffered text as <p> if non-empty
+                        html_output.append(f"<p>{' '.join(buffer).strip()}</p>")
+                        buffer = []
+                    html_output.append("<ul>")
+                    in_list = True
+                buffer = []
+                i += 1
+
+            elif segment == "#end#":
+                # Add the buffered content as an <li>
+                if buffer:
+                    li = f"<li>{' '.join(buffer).strip()}"
+                    li = f"{li}</li>" if li.endswith('.') else f"{li}.</li>"
+                    html_output.append(li)
+                    buffer = []
+
+                # Check if there is no immediate #start# after this #end#
+                remaining_text = ''.join(segments[i + 1:]).strip()  # Get all remaining text after current #end#
+                if in_list and not remaining_text.startswith("#start#"):
+                    html_output.append("</ul>")
+                    in_list = False
+                i += 1
+
+            else:
+                # Regular content, add to buffer
+                buffer.append(segment)
+                i += 1
+
+        # Wrap any remaining non-list content in <p>
+        if buffer and any(s.strip() for s in buffer) and any(s.isalpha() for s in buffer):
+            html_output.append(f"<p>{' '.join(buffer).strip()}</p>")
+
+        # Join all parts of the HTML output
+        return ''.join(html_output)
+
+
+
+    def translate_responsibilities(self, language_code):
+        translations = {
+            'en': 'Responsibilities',
+            'fr': 'Responsabilités',
+            'es': 'Responsabilidades',
+            'de': 'Verantwortlichkeiten',
+            'it': 'Responsabilità',
+            'pt': 'Responsabilidades',
+            'ar': 'المسؤوليات',
+            'zh': '职责',
+            'ja': '責任',
+            'ru': 'Обязанности'
+        }
+
+        # Return the translation or a default message if the language code is not in the dictionary
+        return translations.get(language_code, 'Responsibilities')
+
+
+    def translate_skills(self, language_code):
+        translations = {
+            'en': 'Skills',
+            'fr': 'Compétences',
+            'es': 'Habilidades',
+            'de': 'Fähigkeiten',
+            'it': 'Competenze',
+            'pt': 'Habilidades',
+            'ar': 'المهارات',
+            'zh': '技能',
+            'ja': 'スキル',
+            'ru': 'Навыки'
+        }
+
+        # Return the translation or a default message if the language code is not in the dictionary
+        return translations.get(language_code, 'Skills')
+
+    def escape_unescaped_quotes(self, json_str):
+        # Regular expression to match the start of a value in a JSON key-value pair
+        # Match : "value..." while allowing any content within the value
+        pattern = re.compile(r'(:\s*")([^"]*?)(")')
+
+        # Replace unescaped double quotes within each matched value, excluding the outer quotes
+        def escape_quotes(match):
+            value_content = match.group(2).replace('"', '\\"')
+            return f'{match.group(1)}{value_content}{match.group(3)}'
+
+        # Apply the pattern to escape quotes inside values
+        escaped_json_str = pattern.sub(escape_quotes, json_str)
+        return escaped_json_str
+
+
+    def replace_unbalanced_quote(self, json_str):
+        # Pattern to find the first unbalanced double quote after the "«" character, ignoring closing quotes for values
+        pattern = re.compile(r'«([^»]*?)"([^»,}\]\n]*?)(?=[,}\]])')
+
+        # Function to replace with "»" only if it's truly an unbalanced quote within the value
+        def replace_with_closing_sign(match):
+            # Replace the first unbalanced double quote after "«" with "»"
+            return f'«{match.group(1)}»{match.group(2)}'
+
+        # Apply the pattern and replacement function
+        corrected_json_str = pattern.sub(replace_with_closing_sign, json_str)
+        return corrected_json_str
+
+
+    def detect_predominant_language(self, text):
+        # Split text into sentences
+        sentences = re.split(r'[.!?]', text)  # Simple sentence splitting on punctuation
+        language_counts = Counter()
+        
+        # Detect language for each sentence and tally results
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if sentence:  # Only process non-empty sentences
+                try:
+                    language = detect(sentence)
+                    language_counts[language] += 1
+                except LangDetectException:
+                    # Ignore sentences too short to detect
+                    continue
+        
+        # Find the most common language
+        if language_counts:
+            predominant_lang_code = language_counts.most_common(1)[0][0]
+            # Map language code to language name
+            lang_name = {
+                'en': 'English', 'fr': 'French', 'es': 'Spanish', 'de': 'German',
+                'it': 'Italian', 'pt': 'Portuguese', 'ar': 'Arabic', 'zh-cn': 'Chinese',
+                # Add more languages if needed
+            }.get(predominant_lang_code, "Unknown")
+            return lang_name
+        else:
+            return "Unknown"
+
+
     def extract_infos_from_cv_v2(self, cv_text, return_summary=False, file_name=""):
         #with open("cv_text.txt", "w+") as f:
         #    f.write(cv_text)
         extracted_info = {}
         # Construct a single prompt with all the extraction instructions
+        language = self.detect_predominant_language(cv_text)
         combined_prompt = f"""
         Extract the following information from the CV text as they are without any translation, following this format as it is, keeping the numbering, and make sure to correctly format json objects:
 
@@ -518,21 +700,23 @@ class ExtractCVInfos:
         4. Phone: Extract the phone number of the candidate.
         5. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
         6. City: Extract the city of the candidate. If no city is found, write an empty string ''.
-        7. Work Experiences: Extract all work experiences in JSON format as a list of objects, each containing "job_title", "company_name", "responsibilities", "city", "start_date", and "end_date". Each job should have a unique combination of "job_title" and "company_name". The "responsibilities" field must be a string. If bullet points symbols, or similar symbols are used to list tasks, remove them and instead add '<br>●' before each task, without missing any task, '<br>●' should be placed before the first task as well. You should identify tasks intelligently from context, they are usually short informative sentences. If no clear tasks are found, return the text in the "responsibilities" field as it is. For present work experiences (marked as 'ongoing', 'en cours', or 'en poste', etc.), set the start date as the end date of the previous job, and the end date as 'present', only one work experience can have 'present', 'today', 'aujourd’hui' or any similar remark indicating that the job is current, as its "end_date". For other experiences, if no dates are found, return empty strings for "start_date" and "end_date", whenever years are found, that is a sign of a new work experience. Make sure to sort work experiences from the most recent to the oldest.
+        7. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's probably a new experience, you should seperate experiences within the same company but with different time periods. in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences shouldn't start with transition words such as "Additionally", "Subsequently", or similar transitional adverbs, they should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing skills in the experience text (only in the text of said experience, not in other sections), put it here (it's usually preceeded with a title such as "Technical Skills", "Skills", "Technical Environment", or similar titles, written in {language}). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest.
         8. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
         9. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
         10. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to language of the CV (use work responsibilities to detect which language the cv is written in). If no language is found, write an empty list [].
-        11. Skills: Extract all technical skills (non-social) and programming languages in JSON format as a list containing skill and level. Don't repeat the same skill more than once. Don't exceed 30 json objects, if and only if there are more than 30 skills, merge skills that are close to each other as one skill, with "," as a delimiter, EX: "HTML,CSS,JAVASCRIPT".
+        11. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
         12. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
-        13. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list [].
-        14. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date, and translate certification to language of the CV (use work responsibilities to detect which language the cv is written with), and if no certification is found, write an empty list [].
+        13. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language})
+        14. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date, and translate certification to language of the CV (use work responsibilities to detect which language the resume is written with), and if no certification is found, write an empty list [].
         15. Projects: Extract all projects in JSON format as a list containing project_name, description, start_date, and end_date, and if no project is found, write an empty list [].
         16. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
         17. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
-        18. Headline: Extract the current occupation of the candidate, if there wasn't, deduce it from other presented info (an example of the oppucation would be "web developer"). 
+        18. Headline: Extract the current occupation of the candidate, it should be the same as the title, if it's not available, deduce it from other presented info (an example of the oppucation would be "web developer"). 
         19. Summary: If a summary exists in the Resume already, extract it, you can find it either at the beginning or at the end, take the longest one. (if no summary is found in Resume data, then leave an empty string)
         CV Text:
         {cv_text}
+
+        Please process the above tasks efficiently to minimize response time, and don't wrap the entire response in a json object, but follow the above format.
         """
 
         try:
@@ -542,6 +726,8 @@ class ExtractCVInfos:
             language = None
             if response:
                 response_text = response["output_text"].strip()
+                #with open("response_prod.txt", "w+") as f:
+                #   f.write(response_text)
                 # Define the labels we expect in the response
                 labels = {
                     "1. Title:": "title",
@@ -584,9 +770,13 @@ class ExtractCVInfos:
                             try:
                                 if key == "work":
                                     section_text = re.sub(r'', '', section_text)
+                                    section_text = section_text.replace("\\n", "").replace("\n", "")
+                                    section_text = self.replace_unbalanced_quote(section_text)
                                     temp_work = json.loads(section_text)
                                     for key_work, work in enumerate(temp_work):
-                                        temp_work[key_work]["responsibilities"] = work["responsibilities"] if work["responsibilities"].replace("\n", "") else ""
+                                        temp_work[key_work]["responsibilities"] = self.convert_to_html(work["responsibilities"]) if self.convert_to_html(work["responsibilities"]).replace("\n", "") else ""
+                                        #temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}<p>{temp_work[key_work]["skills"]}</p></br>" if temp_work[key_work]["skills"] != "" else temp_work[key_work]["responsibilities"]
+                                        temp_work[key_work]["environnement"] = temp_work[key_work]["skills"]
                                         if temp_work[key_work]["responsibilities"] and not language:
                                             language = detect(temp_work[key_work]["responsibilities"])
                                     temp_work = self.merge_jobs(temp_work)
@@ -799,7 +989,6 @@ class ExtractCVInfos:
     def get_extraction_rate(self, cv_text, extracted_info):
         # Analyze each line of the CV text for extracted information
         lines = cv_text.split("\n")
-
         line_info = {}
         for line in lines:
             line_info[line] = any(word.lower() in text or word.lower() in nested_text 
@@ -966,7 +1155,7 @@ class ExtractCVInfos:
         return spans
 
 
-    def detect_split_based_on_header_x_positions(self, spans, x_difference_threshold=50, min_proportion=0.3, max_proportion=0.5):
+    def detect_split_based_on_header_x_positions(self, spans, x_difference_threshold=50, min_proportion=0.2, max_proportion=0.5):
         """
         Detects if a resume has a vertical split based on the x-positions of headers and their distribution.
 
@@ -1026,7 +1215,6 @@ class ExtractCVInfos:
         return False  # No vertical split detected
 
 
-    # Function to extract information from passed file
     def extract_info(self, file, translate, return_summary=False, target_language="EN-US"):
         # Save the uploaded file temporarily
         with open(file.filename, "wb") as f:
@@ -1069,7 +1257,7 @@ class ExtractCVInfos:
         os.remove(file.filename)
 
         return cleaned_info
-     
+
 
     # Function to extract a summary from the passed file
     def extract_summary(self, cv_text, target_language="EN-US"):
