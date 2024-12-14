@@ -612,13 +612,13 @@ class ExtractCVInfos:
                         filtered_row = [element for element in row if element is not None]
                         text += " | ".join(filtered_row) + "\n"
 
-                annotations = page.annots()
-                if annotations:
-                    for annot in annotations:
-                        uri = annot.get("uri")
-                        if uri and uri not in unique_annotations:
-                            unique_annotations.add(uri)
-                            text = f"{text}{uri}\n"
+                # annotations = page.annots()
+                # if annotations:
+                #     for annot in annotations:
+                #         uri = annot.get("uri")
+                #         if uri and uri not in unique_annotations:
+                #             unique_annotations.add(uri)
+                #             text = f"{text}{uri}\n"
         return text
 
 
