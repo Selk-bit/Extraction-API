@@ -612,13 +612,13 @@ class ExtractCVInfos:
                         filtered_row = [element for element in row if element is not None]
                         text += " | ".join(filtered_row) + "\n"
 
-                # annotations = page.annots()
-                # if annotations:
-                #     for annot in annotations:
-                #         uri = annot.get("uri")
-                #         if uri and uri not in unique_annotations:
-                #             unique_annotations.add(uri)
-                #             text = f"{text}{uri}\n"
+                annotations = page.annots
+                if annotations:
+                    for annot in annotations:
+                        uri = annot.get("uri")
+                        if uri and uri not in unique_annotations:
+                            unique_annotations.add(uri)
+                            text = f"{text}{uri}\n"
         return text
 
 
@@ -876,7 +876,7 @@ class ExtractCVInfos:
         # Construct a single prompt with all the extraction instructions
         language = self.detect_predominant_language(cv_text)
         combined_prompt = f"""
-        Extract the following information from the CV text as they are without any translation, following this format as it is, keeping the numbering, and make sure to correctly format json objects:
+        Extract the following information from the CV text as they are without any translation, following this format as it is without changing anything (NUMBER. KEY_NAME: RESULT), keeping the numbering, and making sure to correctly format json objects:
 
         1. Name: Extract the name of the candidate (Remove unnecessary spaces within the name if found, and leave only spaces seperating first name from middle name, if there was a middle name, from last name, and correct capitalization).
         2. Email: Extract the email of the candidate.
@@ -962,7 +962,7 @@ class ExtractCVInfos:
                                         del temp_work[key_work]["skills"]
                                         if temp_work[key_work]["responsibilities"] and not language:
                                             language = detect(temp_work[key_work]["responsibilities"])
-                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]['responsibilities']}"
+                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}"
                                     temp_work = self.merge_jobs(temp_work)
                                     section_text = json.dumps(temp_work)
                                 if key == "projects":
