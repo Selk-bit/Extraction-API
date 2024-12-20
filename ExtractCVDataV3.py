@@ -876,7 +876,7 @@ class ExtractCVInfos:
         # Construct a single prompt with all the extraction instructions
         language = self.detect_predominant_language(cv_text)
         combined_prompt = f"""
-        Extract the following information from the CV text as they are without any translation, following this format as it is, keeping the numbering, and making sure to correctly format json objects:
+        Extract the following information from the CV text as they are without any translation, following this format as it is:
 
         1. Name: Extract the name of the candidate (Remove unnecessary spaces within the name if found, and leave only spaces seperating first name from middle name, if there was a middle name, from last name, and correct capitalization).
         2. Email: Extract the email of the candidate.
