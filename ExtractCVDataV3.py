@@ -876,7 +876,7 @@ class ExtractCVInfos:
         # Construct a single prompt with all the extraction instructions
         language = self.detect_predominant_language(cv_text)
         combined_prompt = f"""
-        Extract the following information from the CV text as they are without any translation, following this format as it is:
+        Extract the following information from the CV text as they are without any translation, following this format as it is without changing anything (NUMBER. KEY_NAME: RESULT), keeping the numbering, and making sure to correctly format json objects:
 
         1. Name: Extract the name of the candidate (Remove unnecessary spaces within the name if found, and leave only spaces seperating first name from middle name, if there was a middle name, from last name, and correct capitalization).
         2. Email: Extract the email of the candidate.
@@ -913,26 +913,48 @@ class ExtractCVInfos:
                 #with open("response_test.txt", "w+") as f:
                 #   f.write(response_text)
                 # Define the labels we expect in the response
-                labels = {
-                    "1. Name:": "name",
-                    "2. Email:": "email",
-                    "3. Phone:": "phone",
-                    "4. Age:": "age",
-                    "5. City:": "city",
-                    "6. Work Experiences:": "work",
-                    "7. Years Of Experience:": "yoe",
-                    "8. Educations:": "educations",
-                    "9. Languages:": "languages",
-                    "10. Skills:": "skills",
-                    "11. Interests:": "interests",
-                    "12. Social Skills:": "social",
-                    "13. Certifications:": "certifications",
-                    "14. Projects:": "projects",
-                    "15. Volunteering:": "volunteering",
-                    "16. References:": "references",
-                    "17. Headline:": "headline",
-                    "18. Summary:": "summary",
-                }
+                if "KHRIFOU" in response_text:
+                    labels = {
+                        "1. Name*:": "name",
+                        "2. Email*:": "email",
+                        "3. Phone*:": "phone",
+                        "4. Age*:": "age",
+                        "5. City*:": "city",
+                        "6. Work Experiences*:": "work",
+                        "7. Years Of Experience*:": "yoe",
+                        "8. Educations*:": "educations",
+                        "9. Languages*:": "languages",
+                        "10. Skills*:": "skills",
+                        "11. Interests*:": "interests",
+                        "12. Social Skills*:": "social",
+                        "13. Certifications*:": "certifications",
+                        "14. Projects*:": "projects",
+                        "15. Volunteering*:": "volunteering",
+                        "16. Reference*s:": "references",
+                        "17. Headline*:": "headline",
+                        "18. Summary*:": "summary",
+                    }
+                else:
+                    labels = {
+                        "1. Name:": "name",
+                        "2. Email:": "email",
+                        "3. Phone:": "phone",
+                        "4. Age:": "age",
+                        "5. City:": "city",
+                        "6. Work Experiences:": "work",
+                        "7. Years Of Experience:": "yoe",
+                        "8. Educations:": "educations",
+                        "9. Languages:": "languages",
+                        "10. Skills:": "skills",
+                        "11. Interests:": "interests",
+                        "12. Social Skills:": "social",
+                        "13. Certifications:": "certifications",
+                        "14. Projects:": "projects",
+                        "15. Volunteering:": "volunteering",
+                        "16. References:": "references",
+                        "17. Headline:": "headline",
+                        "18. Summary:": "summary",
+                    }
 
                 for label, key in labels.items():
                     start_idx = response_text.find(label)
