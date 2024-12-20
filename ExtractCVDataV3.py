@@ -913,48 +913,26 @@ class ExtractCVInfos:
                 #with open("response_test.txt", "w+") as f:
                 #   f.write(response_text)
                 # Define the labels we expect in the response
-                if "KHRIFOU" in response_text:
-                    labels = {
-                        "1. Name*:": "name",
-                        "2. Email*:": "email",
-                        "3. Phone*:": "phone",
-                        "4. Age*:": "age",
-                        "5. City*:": "city",
-                        "6. Work Experiences*:": "work",
-                        "7. Years Of Experience*:": "yoe",
-                        "8. Educations*:": "educations",
-                        "9. Languages*:": "languages",
-                        "10. Skills*:": "skills",
-                        "11. Interests*:": "interests",
-                        "12. Social Skills*:": "social",
-                        "13. Certifications*:": "certifications",
-                        "14. Projects*:": "projects",
-                        "15. Volunteering*:": "volunteering",
-                        "16. Reference*s:": "references",
-                        "17. Headline*:": "headline",
-                        "18. Summary*:": "summary",
-                    }
-                else:
-                    labels = {
-                        "1. Name:": "name",
-                        "2. Email:": "email",
-                        "3. Phone:": "phone",
-                        "4. Age:": "age",
-                        "5. City:": "city",
-                        "6. Work Experiences:": "work",
-                        "7. Years Of Experience:": "yoe",
-                        "8. Educations:": "educations",
-                        "9. Languages:": "languages",
-                        "10. Skills:": "skills",
-                        "11. Interests:": "interests",
-                        "12. Social Skills:": "social",
-                        "13. Certifications:": "certifications",
-                        "14. Projects:": "projects",
-                        "15. Volunteering:": "volunteering",
-                        "16. References:": "references",
-                        "17. Headline:": "headline",
-                        "18. Summary:": "summary",
-                    }
+                labels = {
+                    "1. Name:": "name",
+                    "2. Email:": "email",
+                    "3. Phone:": "phone",
+                    "4. Age:": "age",
+                    "5. City:": "city",
+                    "6. Work Experiences:": "work",
+                    "7. Years Of Experience:": "yoe",
+                    "8. Educations:": "educations",
+                    "9. Languages:": "languages",
+                    "10. Skills:": "skills",
+                    "11. Interests:": "interests",
+                    "12. Social Skills:": "social",
+                    "13. Certifications:": "certifications",
+                    "14. Projects:": "projects",
+                    "15. Volunteering:": "volunteering",
+                    "16. References:": "references",
+                    "17. Headline:": "headline",
+                    "18. Summary:": "summary",
+                }
 
                 for label, key in labels.items():
                     start_idx = response_text.find(label)
