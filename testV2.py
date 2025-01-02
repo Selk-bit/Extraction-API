@@ -697,7 +697,7 @@ class salim:
                                     temp_work = json.loads(section_text)
                                     for key_work, work in enumerate(temp_work):
                                         temp_work[key_work]["responsibilities"] = self.convert_to_html(work["responsibilities"]) if self.convert_to_html(work["responsibilities"]).replace("\n", "") else ""
-                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}<p>{self.translate_skills(language)}: {temp_work[key_work]["skills"]}</p>" if temp_work[key_work]["skills"] != "" else temp_work[key_work]["responsibilities"]
+                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]['responsibilities']}<p>{self.translate_skills(language)}: {temp_work[key_work]["skills"]}</p>" if temp_work[key_work]["skills"] != "" else temp_work[key_work]["responsibilities"]
                                         temp_work[key_work].pop('skills', None)
                                         if temp_work[key_work]["responsibilities"] and not language:
                                             language = detect(temp_work[key_work]["responsibilities"])
