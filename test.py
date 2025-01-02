@@ -891,7 +891,7 @@ class salim:
         11. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
         12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text)
         13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to {language}, and if no certification is found, write an empty list [].
-        14. Projects: Extract all projects in JSON format as a list containing project_name, description, start_date, and end_date, the description must contain any text you can find talking about the project, if the text contains bullet point tasks, add the string "#start#" at the start of each task sentence, and "#end#" at the end of each task sentence. if the text doesn't contain bulltet point, or parts of the text do not contain bullet points, write them as they are. if no project is found, write an empty list [].
+        14. Projects: Extract all projects in JSON format as a list containing project_name, description, skills, start_date, and end_date, the description must contain any text you can find talking about the project, analyze the project's text and extract from it a list of tasks based on your understanding of the context and the positions of newlines, then add the string "#start#" at the beginning of each task sentence, and "#end#" at the end of each task sentence. whenever you find a newline in the project's description, that's the end of a task and the start of another, so please don't forget adding the strings "#start#" and "#end#". for the skills, list all hard technical skills mentioned in the description of the project at hand, seperated by a comma. projects can be found either in a dedicated section called projects, or inside work experiences, clearly highlighted as projects. if no project is found, write an empty list [].
         15. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
         16. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
         17. Headline: Extract the current occupation of the candidate, if it wasn't explicitly mentioned, deduce it from the most recent work experience (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
@@ -900,7 +900,7 @@ class salim:
         {cv_text}
 
 
-        Please process the above tasks efficiently to minimize response time.
+        Please process the above tasks efficiently to minimize response time, and don't forget the instruction of adding "#start#" and "#end#" for all work experiences responsabilities and all projects descriptions.
         """
         #with open("cv_text.txt", "w+") as f:
         #    f.write(combined_prompt)
@@ -935,8 +935,8 @@ class salim:
                     "18. Summary:": "summary",
                 }
 
+
                 for label, key in labels.items():
-                    print("hhhhhhhhhhhhhhhhhhhhhhhhhhhh")
                     start_idx = response_text.find(label)
                     if start_idx != -1:
                         start_idx += len(label)
@@ -964,7 +964,7 @@ class salim:
                                         del temp_work[key_work]["skills"]
                                         if temp_work[key_work]["responsibilities"] and not language:
                                             language = detect(temp_work[key_work]["responsibilities"])
-                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]['responsibilities']}"
+                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}"
                                     temp_work = self.merge_jobs(temp_work)
                                     section_text = json.dumps(temp_work)
                                 if key == "projects":

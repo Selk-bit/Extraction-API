@@ -22,7 +22,10 @@ from concurrent.futures import ProcessPoolExecutor
 import fitz
 from collections import Counter
 import mimetypes
-import threading
+import random
+import copy
+import asyncio
+
 
 upload_lock = threading.Lock()
 
@@ -76,7 +79,7 @@ pre_defined_headers = [header.lower() for header in pre_defined_headers]
 class salim:
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY")
-        #self.chain = self.get_conversational_chain()
+        self.chain = self.get_conversational_chain()
         self.model = self.get_conversational_model()
         self.translator = Translator()
         self.report_file = "report.json"
@@ -92,7 +95,7 @@ class salim:
         return count_response.total_tokens
         # return len(self.encoder.encode(text))
 
-        
+
     def calculate_cost(self, tokens, is_input):
         if tokens <= 128000:
             if is_input:
@@ -496,15 +499,15 @@ class salim:
         model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.3, max_tokens=8192)
 
         prompt_template = """
-        Answer the question as detailed as possible from the provided context, and make sure to provide all the details,
+        Answer the request as detailed as possible from the provided context.
         if the answer is not in the provided context just give an empty string "", don't provide the wrong answer nor say that the answer is not provided in the context, 
-        and do not add any extra characters other than the ones demanded. Make sure the answer is provided in the way that it is asked in the question.
-	    Use as much processing power as you can to answer fast.
+        and do not add any extra characters other than the ones demanded. Make 1sure the answer is provided in the way that it is asked in the question.
+	Use as much processing power as you can to answer fast.
         Context :\n {context}?\n
         Question: \n {question}\n
-	    DON'T ANSWER WITH A JSON FORMAT IN A TEXT EDITOR, BUT RATHER, ANSWER WITH THE FOLLOWING FORMAT, AND KEEP TITLES
-        Answer:
+        Request:
         """
+
         prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
         chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
         return chain
@@ -695,6 +698,178 @@ class salim:
             return "Unknown"
 
 
+    def extract_infos_from_cv_v3(self, cv_text, return_summary=False, file_name=""):
+        #with open("cv_text.txt", "w+") as f:
+        #    f.write(cv_text)
+        extracted_info = {}
+        #with open("request_prod.txt", "w+") as f:
+        #    f.write(cv_text)
+        # Construct a single prompt with all the extraction instructions
+        language = self.detect_predominant_language(cv_text)
+        combined_prompt = f"""
+        Extract the following information from the CV text as they are without any translation, following this format as it is without changing anything (NUMBER. KEY_NAME: RESULT), keeping the numbering, and making sure to correctly format json objects:
+
+        1. Name: Extract the name of the candidate (Remove unnecessary spaces within the name if found, and leave only spaces seperating first name from middle name, if there was a middle name, from last name, and correct capitalization).
+        2. Email: Extract the email of the candidate.
+        3. Phone: Extract the phone number of the candidate.
+        4. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
+        5. City: Extract the city of the candidate. If no city is found, write an empty string ''.
+        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate experiences within the same company but with different time periods. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, leave it empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said, not in other sections, the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique" or similar titles, written in {language}). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
+        7. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
+        8. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
+        9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to {language} if they're not already. If no language is found, write an empty list [].
+        10. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
+        11. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
+        12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text)
+        13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to {language}, and if no certification is found, write an empty list [].
+        14. Projects: Extract all projects in JSON format as a list containing project_name, description, skills, start_date, and end_date, the description must contain any text you can find talking about the project, if the project's description contains sentences in the form of bullet points or list of tasks (if there is more than one newline in the description, there is likely a list of tasks), add the string "#start#" at the start of each task sentence, and "#end#" at the end of each task sentence. if the description doesn't contain bulltet points or list of tasks, and was actually one lengthy continuous paragraph, write it as it is without "#start#" and "#end#". please check carfully whether the is a list of tasks or not. for the skills, list all hard technical skills mentioned in the description of the project at hand, seperated by a comma. projects can be found either in a dedicated section called projects, or inside work experiences, clearly highlighted as projects. if no project is found, write an empty list [].
+        15. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
+        16. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
+        17. Headline: Extract the current occupation of the candidate, if it wasn't explicitly mentioned, deduce it from the most recent work experience (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
+        18. Summary: If a summary exists in the Resume already, extract it, you can find it either at the beginning or at the end, take the longest one. (if no summary is found in Resume data, then leave an empty string)
+        CV Text:
+        {cv_text}
+
+
+
+	---------------------------------------------------------------------
+        Please process the above tasks efficiently to minimize response time.
+        """
+        #with open("cv_text.txt", "w+") as f:
+        #    f.write(combined_prompt)
+        try:
+            # Make a single call with the combined prompt
+            response = self.chain({"context": "CV Extraction", "question": combined_prompt, "input_documents": []},
+                                  return_only_outputs=True)
+            language = None
+            if response:
+                response_text = response["output_text"].strip()
+                with open("response_test.txt", "w+") as f:
+                   f.write(response_text)
+                # Define the labels we expect in the response
+                labels = {
+                    "1. Name:": "name",
+                    "2. Email:": "email",
+                    "3. Phone:": "phone",
+                    "4. Age:": "age",
+                    "5. City:": "city",
+                    "6. Work Experiences:": "work",
+                    "7. Years Of Experience:": "yoe",
+                    "8. Educations:": "educations",
+                    "9. Languages:": "languages",
+                    "10. Skills:": "skills",
+                    "11. Interests:": "interests",
+                    "12. Social Skills:": "social",
+                    "13. Certifications:": "certifications",
+                    "14. Projects:": "projects",
+                    "15. Volunteering:": "volunteering",
+                    "16. References:": "references",
+                    "17. Headline:": "headline",
+                    "18. Summary:": "summary",
+                }
+
+                for label, key in labels.items():
+                    start_idx = response_text.find(label)
+                    if start_idx != -1:
+                        start_idx += len(label)
+                        # Find the next label or the end of the text
+                        end_idx = len(response_text)
+                        for next_label in labels:
+                            next_label_idx = response_text.find(next_label, start_idx)
+                            if next_label_idx != -1 and next_label_idx < end_idx:
+                                end_idx = next_label_idx
+                        section_text = response_text[start_idx:end_idx].strip()
+                        # Check if the section should be parsed as JSON
+                        if key in ["work_experiences", "educations", "languages", "skills", "interests",
+                                   "social", "certifications", "projects", "volunteering", "references", "work"]:
+                            try:
+                                if key == "work":
+                                    section_text = re.sub(r'', '', section_text)
+                                    section_text = section_text.replace("\\n", "").replace("\n", "")
+                                    section_text = self.replace_unbalanced_quote(section_text)
+                                    temp_work = json.loads(section_text)
+                                    for key_work, work in enumerate(temp_work):
+                                        temp_work[key_work]["responsibilities"] = self.convert_to_html(work["responsibilities"]) if self.convert_to_html(work["responsibilities"]).replace("\n", "") else ""
+                                        #temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}<p>{temp_work[key_work]["skills"]}</p></br>" if temp_work[key_work]["skills"] != "" else temp_work[key_work]["responsibilities"]
+                                        temp_work[key_work]["environnement"] = temp_work[key_work]["skills"]
+                                        del temp_work[key_work]["skills"]
+                                        if temp_work[key_work]["responsibilities"] and not language:
+                                            language = detect(temp_work[key_work]["responsibilities"])
+                                        temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}"
+                                    temp_work = self.merge_jobs(temp_work)
+                                    section_text = json.dumps(temp_work)
+                                if key == "projects":
+                                    section_text = re.sub(r'', '', section_text)
+                                    section_text = section_text.replace("\\n", "").replace("\n", "")
+                                    section_text = self.replace_unbalanced_quote(section_text)
+                                    temp_project = json.loads(section_text)
+                                    for key_project, project in enumerate(temp_project):
+                                        temp_project[key_project]["description"] = self.convert_to_html(project["description"]) if self.convert_to_html(project["description"]).replace("\n", "") else ""
+                                    section_text = json.dumps(temp_project)
+                                extracted_info[key] = json.loads(section_text.replace("\n", "").replace("\r", "").replace("<br><br>", "<br>"))
+                                if key == "interests":
+                                    processed_interests = []
+                                    if isinstance(extracted_info[key], list):
+                                        for item in extracted_info[key]:
+                                            if isinstance(item, dict) and 'interest' in item:
+                                                if ',' in item['interest']:
+                                                    split_interests = item['interest'].split(',')
+                                                    for interest in split_interests:
+                                                        processed_interests.append({'interest': (interest.strip()).split("...")[0] if interest.endswith("...") else interest.strip()})
+                                                else:
+                                                    processed_interests.append(item)
+                                            elif isinstance(item, str):
+                                                processed_interests.append({'interest': item})
+                                    extracted_info[key] = processed_interests
+                            except Exception as e:
+                                with open("response_prod.txt", "w+") as f:
+                                    f.write(section_text)
+                                print(e)
+                                print(key)
+                                extracted_info[key] = []  # Handle JSON decode error
+                        else:
+                            if key == "email":
+                                extracted_info[key] = section_text.replace("\n", "").replace(" ", "")
+                                extracted_info[key] = re.sub(r'^[\W_]+', '', extracted_info[key]).lower()
+                            else:
+                                extracted_info[key] = section_text.replace("\n", "") if section_text.replace("\n", "") != "" else None
+        except Exception as e:
+            print("Safety rating issue detected:", e)
+            return extracted_info
+
+        if "email" in extracted_info and extracted_info["email"]:
+            threading.Thread(target=self.process_report_entry, args=(file_name, extracted_info["email"], combined_prompt, response_text)).start()
+
+        # Handle the summary extraction separately
+        if return_summary:
+            summary_prompt = f"""
+            Generate a summary that describes the extracted information from the CV based on the text of the CV. Aim for a well-structured and captivating summary that reflects the essence of the candidate's capabilities and aspirations, with a first-person point of view, and do not exceed 200 characters.
+
+            CV Text:
+            {cv_text}
+            """
+            try:
+                summary_response = self.chain(
+                    {"context": "Summary Extraction", "question": summary_prompt, "input_documents": []},
+                    return_only_outputs=True)
+                if summary_response:
+                    extracted_info["summary"] = summary_response["output_text"].strip().replace("\n", "")
+                else:
+                    extracted_info["summary"] = ""
+            except genai.types.generation_types.StopCandidateException as e:
+                print("Safety rating issue detected during summary extraction:", e)
+                extracted_info["summary"] = ""
+        #with open("Cv.json", "w+") as f:
+        #    json.dump(extracted_info, f)
+        extracted_info["language"] = language
+        if "work" in extracted_info and extracted_info["work"]:
+            first_start_date = extracted_info["work"][-1]["start_date"]
+            match = re.search(r'\b(19|20)\d{2}\b', first_start_date)
+            year = int(match.group()) if match else None
+            current_year = datetime.now().year
+            extracted_info["yoe"] = f"{current_year - year}" if year else extracted_info["yoe"]
+        return extracted_info
+
 
     def extract_infos_from_cv_v2(self, cv_input, return_summary=False, file_name=""):
         #with open("cv_text.txt", "w+") as f:
@@ -702,15 +877,15 @@ class salim:
         extracted_info = {}
         # Construct a single prompt with all the extraction instructions
         combined_prompt = f"""
-        Answer the request as detailed as possible from the provided context, and make sure to provide all the details,
+        Answer the request as detailed as possible from the provided context.
         if the answer is not in the provided context just give an empty string "", don't provide the wrong answer nor say that the answer is not provided in the context, 
         Do not add any extra characters other than the ones demanded. Make sure the answer is provided in the way that it is asked in the question.
         Please, use as much processing power as you can to answer as fast as possible.
         DO NOT ANSWER WITH A JSON, RESPOND ONLY WITH THE OUTLINED FORMAT AS A TEXT, KEEPING THE NUMBERS.
-        
+
         Context :
         Resume Text Extraction
-        
+
         Request:
         Extract the following information from the CV text as they are without any translation, following this format as it is, keeping the numbering, and make sure to correctly format the ones that needs json objects:
 
@@ -719,21 +894,24 @@ class salim:
         3. Phone: Extract the phone number of the candidate.
         4. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
         5. City: Extract the city of the candidate. If no city is found, write an empty string ''.
-        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate experiences within the same company but with different time periods. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, leave it empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said, not in other sections, the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique" or similar titles, written in the language of the resume). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
+        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate experiences within the same company but with different time periods. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, leave it empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said, not in other sections, the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique" or similar titles, written in the language of the resume, which should either be English or French). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
         7. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
         8. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
-        9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to the language of the resume if they're not already (you can identify the language of the resume from experiences). If no language is found, write an empty list [].
-        10. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in the language of the resume), use your intelligence to group skills, and write categories names in the language of the resume (you can identify the language of the resume from experiences), and don't exceed 6 different categories overall.
+        9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to the language of the resume if they're not already (you can identify the language of the resume from work experiences text, which should either be English or French). If no language is found, write an empty list [].
+        10. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in the language of the resume after you detect it, which should either be English or French), use your intelligence to group skills, and write categories names in the language of the resume (you can identify the language of the resume from experiences), and don't exceed 6 different categories overall.
         11. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
         12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in the language of the resume as they are written in the resume text)
-        13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to the language of the resume (you can identify it from experiences), and if no certification is found, write an empty list [].
-        14. Projects: Extract all projects in JSON format as a list containing project_name, description, start_date, and end_date, and if no project is found, write an empty list [].
+        13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to the language of the resume (you can identify it from work experiences text, which should either be English or French), and if no certification is found, write an empty list [].
+        14. Projects: Extract all projects in JSON format as a list containing project_name, description, skills, start_date, and end_date, the description must contain any text you can find talking about the project, analyze the project's text and extract from it a list of tasks based on your understanding of the context and the positions of newlines, then add the string "#start#" at the beginning of each task sentence, and "#end#" at the end of each task sentence. whenever you find a newline in the project's description, that's the end of a task and the start of another, so please don't forget adding the strings "#start#" and "#end#". for the skills, list all hard technical skills mentioned in the description of the project at hand, seperated by a comma. projects can be found either in a dedicated section called projects, or inside work experiences, clearly highlighted as projects. if no project is found, write an empty list [].
         15. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
         16. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
         17. Headline: Extract the current occupation of the candidate, if it wasn't explicitly mentioned, deduce it from the most recent work experience (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
         18. Summary: If a summary exists in the Resume already, extract it, you can find it either at the beginning or at the end, take the longest one. (if no summary is found in Resume data, then leave an empty string)
-        
-        Don't forget to identify the language of the resume from work experiences text.
+
+
+        Don't forget to identify the language of the resume from work experiences text, which should either be English or French.
+
+	Please process the above tasks efficiently to minimize response time. and don't forget the instruction of adding "#start#" and "#end#" for responsabilities and projects descriptions.
         """
 
         uploaded_files = []
@@ -763,8 +941,8 @@ class salim:
             language = None
             if response:
                 response_text = response.text.strip().replace("```json", "").replace("```", "")
-                #with open("response_test.txt", "w+") as f:
-                #   f.write(response_text)
+                with open("response_test.txt", "w+") as f:
+                   f.write(response_text)
                 # Define the labels we expect in the response
                 labels = {
                     "1. Name:": "name",
@@ -819,6 +997,14 @@ class salim:
                                         temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}"
                                     temp_work = self.merge_jobs(temp_work)
                                     section_text = json.dumps(temp_work)
+                                if key == "projects":
+                                    section_text = re.sub(r'', '', section_text)
+                                    section_text = section_text.replace("\\n", "").replace("\n", "")
+                                    section_text = self.replace_unbalanced_quote(section_text)
+                                    temp_project = json.loads(section_text)
+                                    for key_project, project in enumerate(temp_project):
+                                        temp_project[key_project]["description"] = self.convert_to_html(project["description"]) if self.convert_to_html(project["description"]).replace("\n", "") else ""
+                                    section_text = json.dumps(temp_project)
                                 extracted_info[key] = json.loads(section_text.replace("\n", "").replace("\r", "").replace("<br><br>", "<br>"))
                                 if key == "interests":
                                     processed_interests = []
@@ -883,6 +1069,7 @@ class salim:
             current_year = datetime.now().year
             extracted_info["yoe"] = f"{current_year - year}" if year else extracted_info["yoe"]
         return extracted_info
+
 
 
     def process_report_entry(self, file_name, email, combined_prompt, response_text):
@@ -1076,7 +1263,8 @@ class salim:
 
     # Function to extract a summary from the CV
     def extract_summary_from_cv_v2(self, cv_text, lang):
-        prompt = f"""Generate a summary that describes the following information extracted from a CV. Aim for a well-structured, captivating summary that reflects the essence of the candidate's abilities and aspirations, in the first-person point of view, without exceeding 300 characters. The summary should be in {lang}, written in one paragraph. Here are the CV data, make sure to only answer with the summary alone, NOTHING ELSE SHOULD BE ADDED, NO LABLES, NO COMMENTS:\n\n""" + cv_text + "\n"
+        # prompt = f"""Generate a summary that describes the following information extracted from a CV. Aim for a well-structured, captivating summary that reflects the essence of the candidate's abilities and aspirations, in the first-person point of view, without exceeding 300 characters. The summary should be in {lang}, written in one paragraph. Here are the CV data, make sure to only answer with the summary alone, NOTHING ELSE SHOULD BE ADDED, NO LABLES, NO COMMENTS:\n\n""" + cv_text + "\n"
+        prompt = f"""Act as a senior Recruitment Business Engineer specializing in sourcing technical talent. Carefully review the candidate's resume and craft a compelling summary of their skills and experiences. Highlight their key achievements, technical expertise, and ability to integrate into complex projects. Adopt a professional, clear, and concise tone, in the first-person point of view, emphasizing results and the added value they could bring to a company. The summary should reflect the candidate's potential while being tailored to the expectations of technical and HR decision-makers. Do not exceed 300 words, and assuming you can generate many different versions of this summary, let this one be the version number {random.randint(0,20)}. The summary should be in {lang}, written in one paragraph. Here are the CV data, make sure to only answer with the summary alone, NOTHING ELSE SHOULD BE ADDED, NO LABLES, NO COMMENTS:\n\n""" + cv_text + "\n"
         #with open("myPrompt.txt", "w+") as f:
         #    f.write(prompt)
         response = self.chain({"context": "Summary extraction", "question": prompt, "input_documents": []}, return_only_outputs=True)
@@ -1264,6 +1452,7 @@ class salim:
         cv_input = None
         extracted_info = {}
 
+
         if file.filename.endswith(".pdf"):
             # Create the 'screens' directory if it doesn't exist
             #screens_dir = 'screens'
@@ -1283,15 +1472,19 @@ class salim:
             # Set cv_input to the list of image paths
             #cv_input = image_paths
             cv_input = file
+            extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
 
         elif file.filename.endswith(".docx"):
             # Extract text from the DOCX as before
             cv_input = self.get_docx_text(file.filename)
+            extracted_info = self.extract_infos_from_cv_v3(cv_input, return_summary, file.filename)
         else:
             return {"error": "The uploaded file is not a PDF or a DOCX file"}
 
+
+
         # Pass cv_input to extract_infos_from_cv_v2
-        extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
+        # extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
 
         # Clean up the extracted information
         cleaned_info = {}
@@ -1348,28 +1541,90 @@ class salim:
         return results
 
 
-
-    def translate_json(self, data, target_language):
-        email = data["email"]
-        json_string = json.dumps(data)
-        json_string = json_string.replace("```", "")
+    async def _translate_chunk_async(self, data_chunk: dict, target_language: str) -> dict:
+        """
+        Async version of chunk translation. 
+        The chain(...) call is assumed to be async, so we await it.
+        """
+        email = data_chunk.get("email")
+        json_string = json.dumps(data_chunk, ensure_ascii=False)
+        
         prompt = f"""
-        Translate the following JSON data to {target_language}, only values should be translated, keys should remain the same, and values containing numbers should be represented as strings in the json. Answer only with the json, nothing else should be added, no comments no nothing, AND DON'T USE AN EDITOR:
+        Translate the following JSON data to {target_language}, only values should be translated, 
+        keys should remain the same, and values containing numbers should be represented as strings 
+        in the json. Answer only with the json, nothing else should be added, no comments no nothing, 
+        AND DON'T USE AN EDITOR:
+
         {json_string}
         """
-        response = self.chain({"context": "JSON Translation", "question": prompt, "input_documents": []}, return_only_outputs=True)
+        
+        # Await the LLM chain (assuming chain is async)
+        response = await asyncio.to_thread(
+            self.chain,
+            {
+                "context": "JSON Translation",
+                "question": prompt,
+                "input_documents": []
+            },
+            return_only_outputs=True
+        )
+        
         output_text = response["output_text"]
-        #with open("Cv.txt", "w+") as f:
-        #    f.write(output_text)
+        
+        # Remove markdown fences if present
         if "```" in output_text:
-            output_text = output_text.split("```")[1]
-            output_text = output_text.split("json", 1)[1] if output_text.startswith("json") else output_text
-        if email:
-            threading.Thread(target=self.process_translation, args=(prompt, output_text, email)).start()
-        if response:
-            return json.loads(output_text.strip())
+            output_text = output_text.replace("```json", "").replace("```", "")
+
+        
+        try:
+            result = json.loads(output_text.strip())
+        except json.JSONDecodeError:
+            result = {}
+        return result
+
+
+    async def translate_json(self, data: dict, target_language: str) -> dict:
+        """
+        The main async method that decides whether to split the data or not, 
+        and if split, sends both chunks to Gemini in parallel.
+        """
+        json_string = json.dumps(data, ensure_ascii=False)
+        input_tokens = self.count_tokens(json_string)
+        
+        threshold = 5000
+        if input_tokens <= threshold:
+            # Just do a single async call
+            return await self._translate_chunk_async(data, target_language)
         else:
-            return {}
+            # Split the JSON if it has a large 'work' list
+            if 'work' in data and isinstance(data['work'], list) and len(data['work']) > 1:
+                work_list = data['work']
+                half = len(work_list) // 2
+
+                # Prepare chunk 1
+                chunk1 = copy.deepcopy(data)
+                chunk1['work'] = work_list[:half]
+
+                # Prepare chunk 2
+                chunk2 = copy.deepcopy(data)
+                chunk2['work'] = work_list[half:]
+
+                # Fire off both translations concurrently
+                task1 = asyncio.create_task(self._translate_chunk_async(chunk1, target_language))
+                task2 = asyncio.create_task(self._translate_chunk_async(chunk2, target_language))
+
+                # Wait until both complete
+                translated_part1, translated_part2 = await asyncio.gather(task1, task2)
+                # Merge the 'work' arrays from both parts
+                if 'work' not in translated_part1:
+                    translated_part1['work'] = []
+                if 'work' in translated_part2:
+                    translated_part1['work'].extend(translated_part2['work'])
+
+                return translated_part1
+            else:
+                # If 'work' doesn't exist or isn't a large list, fallback to single chunk
+                return await self._translate_chunk_async(data, target_language)
 
 
     def process_translation(self, combined_prompt, output_text, email):

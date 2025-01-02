@@ -69,7 +69,7 @@ pre_defined_headers = [
 pre_defined_headers = [header.lower() for header in pre_defined_headers]
 DetectorFactory.seed = 0
 
-class ExtractCVInfos:
+class salim:
     def __init__(self):
         self.api_key = os.getenv("GOOGLE_API_KEY")
         self.chain = self.get_conversational_chain()
@@ -673,20 +673,21 @@ class ExtractCVInfos:
         model = ChatGoogleGenerativeAI(model="gemini-1.5-flash-002", temperature=0, max_tokens=8192)
 
         prompt_template = """
-        Answer the question as detailed as possible from the provided context, and make sure to provide all the details,
+        Answer the request as detailed as possible from the provided context.
         if the answer is not in the provided context just give an empty string "", don't provide the wrong answer nor say that the answer is not provided in the context, 
         and do not add any extra characters other than the ones demanded. Make sure the answer is provided in the way that it is asked in the question.
 	Use as much processing power as you can to answer fast.
         Context :\n {context}?\n
         Question: \n {question}\n
 	DON'T ANSWER WITH A JSON FORMAT IN A TEXT EDITOR, BUT RATHER, ANSWER WITH THE FOLLOWING FORMAT, AND KEEP TITLES
-        Answer:
+
+       	Request :
         """
         prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
         chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
         return chain
 
-    import json
+
 
     def merge_jobs(self, jobs):
         # Create a dictionary to store unique jobs
@@ -876,33 +877,90 @@ class ExtractCVInfos:
         # Construct a single prompt with all the extraction instructions
         language = self.detect_predominant_language(cv_text)
         combined_prompt = f"""
-        Extract the following information from the CV text as they are without any translation, following this format as it is without changing anything (NUMBER. KEY_NAME: RESULT), keeping the numbering, and making sure to correctly format json objects:
+        Organisez et structurez les données issues du texte d'entrée dans un format JSON clair et défini selon les directives suivantes :
 
-        1. Name: Extract the name of the candidate (Remove unnecessary spaces within the name if found, and leave only spaces seperating first name from middle name, if there was a middle name, from last name, and correct capitalization).
-        2. Email: Extract the email of the candidate.
-        3. Phone: Extract the phone number of the candidate.
-        4. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
-        5. City: Extract the city of the candidate. If no city is found, write an empty string ''.
-        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate experiences within the same company but with different time periods. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, leave it empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said, not in other sections, the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique" or similar titles, written in {language}). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
-        7. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
-        8. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
-        9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to {language} if they're not already. If no language is found, write an empty list [].
-        10. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
-        11. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
-        12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text)
-        13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to {language}, and if no certification is found, write an empty list [].
-        14. Projects: Extract all projects in JSON format as a list containing project_name, description, skills, start_date, and end_date, the description must contain any text you can find talking about the project, if the text contains bullet point tasks, add the string "#start#" at the start of each task sentence, and "#end#" at the end of each task sentence. if the text doesn't contain bulltet point, or parts of the text do not contain bullet points, write them as they are. for skills, list all hard technical skills mentioned in the description of the project at hand, seperated by a comma. projects can be found either in a dedicated section called projects, or inside work experiences, clearly highlighted as projects. if no project is found, write an empty list [].
-        15. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
-        16. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
-        17. Headline: Extract the current occupation of the candidate, if it wasn't explicitly mentioned, deduce it from the most recent work experience (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
-        18. Summary: If a summary exists in the Resume already, extract it, you can find it either at the beginning or at the end, take the longest one. (if no summary is found in Resume data, then leave an empty string)
-        CV Text:
-        {cv_text}
+        Structure Générale :
+        - Les informations doivent être complètes et organisées sous un format JSON, même si certains champs sont absents.
+        - Ne modifiez pas le contenu original (orthographe ou style).
+        - Utilisez l'intégralité du texte disponible.
 
+        Règles de Mise en Forme :
+        - Les champs contenant des listes (ex. : expériences professionnelles, formations,éducation, ou similaires) doivent être formatés avec des balises HTML <ul> et <li>.
+        Structure JSON à respecter :
 
-        Please process the above tasks efficiently to minimize response time.
+        -------------------- skills --------------------
+        - skill : Liste des compétences techniques à mettre dans ('skill')
+        - category : le group des compétences à mettre dans ('category')
+        - level : le niveau des compétences technique dans 'level'
+        Règles d'extraction et de structuration :
+        - Identifier toutes les compétences techniques mentionnées (par exemple, java, python, UML, html,...).
+        - Pour category, si des catégories implicites existent, organiser les compétences sous ces catégories. (par exemple, langages de programmation, frameworks, outils, technologies,...).
+        - Inclure uniquement les compétences techniques telles qu'elles sont mentionnées dans le texte, sans appliquer de regroupement ou de catégorisation.
+
+        -------------------- languages --------------------
+        - languages : Liste des langues mentionnées dans le texte (langues de communication comme le Français, l'Anglais, etc.).
+        - Identifier les langues de communication dans le texte et les inclure dans le champ languages.
+        - Ne pas modifier le contenu original (orthographe ou style ou texte).
+
+        Exclusions :
+        - Ignorer toute autre information qui ne relève pas des compétences techniques ou des langues (ex. : expériences professionnelles, projets, etc.).
+
+        -------------------- work --------------------
+        3. Champs Spécifiques :
+        - work : liste toutes les expériences selon les champs suivants :
+            - job_title : Titre du poste ou rôle occupé complet.
+            - responsibilities : Liste de toutes les missions ou tâches par projet par expériences, formatées en HTML avec <ul> et <li>.
+            - company_name : Nom des entreprises de toutes les expériences.
+            - city : Ville où se trouve l'entreprise, si mentionnée.
+            - start_date : Date de début de l'expérience (exactement comme indiqué dans le texte).
+            - end_date : Date de fin de l'expérience (exactement comme indiqué dans le texte).
+            - environnement : Environnement technique détaillé (outils, technologies, méthodologies), si mentionné.
+            - context : Contexte ou description générale de l'expérience professionnelle ou nom du projet.
+        Règles d'extraction et de structuration :
+        - Extraire toutes les expériences professionnelles mentionnées dans le texte, dans l'ordre chronologique, et les mettre dans la section 'work'.
+        - Ne supprime aucune expérience professionnelle mentionnée dans le texte.
+        - Reproduire fidèlement le texte des champs extraits sans modification de l'orthographe ou du style.
+        - Les champs non mentionnés dans le texte doivent être laissés vides (null ou "").
+
+        -------------------- & yoe & langue -----------------------
+        - yoe (Years of Experience) : Calculer le nombre total d’années d’expérience à partir des dates des expériences professionnelles.
+        - langue : Identifier la langue principale utilisée dans le texte et la mentionner dans ce champ.
+
+        -------------------- projects --------------------
+        - projects is not empty :
+        Structure JSON à respecter pour la section projet :
+            - project_name : Le nom ou le titre du projet ou similaire.
+            - project_description : Une brève description du projet, comprenant son objectif ou son contexte.
+            - project_missions : Liste de toutes les missions ou tâches ou similaire associées au project_name dans la section projects, formatées en HTML avec <ul> et <li>.
+            - project_environnement : Liste des technologies utilisées ou similaire, telles que langages de programmation, outils, frameworks, ou patterns.
+            - project_start_date : La date de début du projet (si mentionnée).
+            - project_end_date : La date de fin du projet (si mentionnée).
+
+        -------------------- Social skill --------------------
+        - Social skill : Ajouter les compétences personnelles ou compétences clés ou similaire mentionnées sous ce champ.
+
+        -------------------- headline --------------------
+        - headline : Extraire le titre ou le poste principal ou similaire mentionné dans le texte.
+
+        -------------------- summary --------------------
+        - summary : Inclure le résumé ou profil ou similaire de l'utilisateur si mentionné.
+
+        4. Instructions Spécifiques :
+        - Respecter strictement le texte fourni pour remplir les champs (aucune modification ou omission).
+        - Les tâches mentionnées dans responsibilities doivent inclure toutes les responsabilités sans exception, formatées avec <ul> et <li>.
+        - Afficher seulement les expériences qui existent.
+        - Afficher seulement les projets qui existent.
+        - Si un champ ou une section n’est pas mentionné(e) dans le texte, ne pas l’inclure dans le JSON.
+        - Faire une extraction totale du contenu.
+        - Laisser le contenu tel qu'il est.
+
+        5. Sortie :
+        - Retournez uniquement un objet JSON structuré, sans texte additionnel.
+
+        Texte d'entrée : {cv_text}
         """
-
+        #with open("cv_text.txt", "w+") as f:
+        #    f.write(combined_prompt)
         try:
             # Make a single call with the combined prompt
             response = self.chain({"context": "CV Extraction", "question": combined_prompt, "input_documents": []},
@@ -910,8 +968,12 @@ class ExtractCVInfos:
             language = None
             if response:
                 response_text = response["output_text"].strip()
-                #with open("response_test.txt", "w+") as f:
-                #   f.write(response_text)
+                if "```" in response_text:
+                    response_text = response_text.replace("```json", "").replace("```", "")
+                with open("response_test.txt", "w+") as f:
+                   f.write(response_text)
+                response_text = json.loads(response_text)
+                return response_text
                 # Define the labels we expect in the response
                 labels = {
                     "1. Name:": "name",
@@ -933,6 +995,7 @@ class ExtractCVInfos:
                     "17. Headline:": "headline",
                     "18. Summary:": "summary",
                 }
+
 
                 for label, key in labels.items():
                     start_idx = response_text.find(label)

@@ -6,8 +6,8 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel
 import os
-from testV3 import salim
-#from ExtractCVDataV2 import ExtractCVInfos
+from testV4 import salim
+#from ExtractCVDataV3Backup import ExtractCVInfos
 import uvicorn
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
@@ -60,48 +60,27 @@ SUPPORTED_MIME_TYPES = {
     "application/pdf": "pdf",
 }
 
-#def process_file(file, translate, target_language):
-#    return cv.extract_info(file, translate, return_summary=False, target_language=target_language)
-
 
 def process_file(file, translate, target_language):
-    extracted_info = cv.extract_info(file, translate, return_summary=False, target_language=target_language)
+    return cv.extract_info(file, translate, return_summary=False, target_language=target_language)
+
+
+#def process_file(file, translate, target_language):
+#    extracted_info = cv.extract_info(file, translate, return_summary=False, target_language=target_language)
+    
     # Check if "name", "email", and "work" keys are present and not empty
-    required_keys = ["name", "email", "work"]
-    if not all(key in extracted_info for key in required_keys):
+#    required_keys = ["name", "email", "work"]
+#    if not all(key in extracted_info for key in required_keys):
         # Return an object with only the "filename" and "error" keys
-        return {
-            "filename": file.filename,
-            "error": (
-                f"An error occurred while extracting information from '{file.filename}'. "
-                "Please ensure the file is a valid CV and try again."
-            )
-        }
-    else:
-        return extracted_info
-
-
-@app.post("/extract")
-async def extract_without(files: List[UploadFile] = File(...), translate: bool = False, target_language: str = "EN-US", return_summary: bool = False):
-    try:
-        extracted_info_list = []
-
-        # Create a ThreadPoolExecutor with a maximum of 10 threads
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            loop = asyncio.get_event_loop()
-
-            # Process files in batches of 10
-            for i in range(0, len(files), 10):
-                batch = files[i:i+10]
-                tasks = [loop.run_in_executor(executor, process_file, file, translate, target_language) for file in batch]
-                results = await asyncio.gather(*tasks)
-                extracted_info_list.extend(results)
-
-        # Return the extracted information for all files as JSON
-        return JSONResponse(content=extracted_info_list)
-
-    except Exception as e:
-        return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
+#        return {
+#            "filename": file.filename,
+#            "error": (
+#                f"An error occurred while extracting information from '{file.filename}'. "
+#                "Please ensure the file is a valid CV and try again."
+#            )
+#        }
+#    else:
+#        return extracted_info
 
 
 def process_translation(data, target_language):
@@ -283,7 +262,7 @@ async def translate_user(data: dict):
         target_language = "EN-US" if detected_language == "fr" else "fr"
 
         # Directly call the translation method without using asyncio tasks
-        translated_data = await cv.translate_json(resume_data, target_language)
+        translated_data = cv.translate_json(resume_data, target_language)
 
         # Prepare the response with the translated data and detected language
         result = {
@@ -498,4 +477,4 @@ async def get_report():
 
 
 if __name__ == '__main__':
-    uvicorn.run("mainV3:app", host="0.0.0.0", port=1496, reload=True)
+    uvicorn.run("mainV4:app", host="0.0.0.0", port=4521, reload=True)
