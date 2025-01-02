@@ -25,6 +25,10 @@ import mimetypes
 import random
 import copy
 import asyncio
+import subprocess
+from pathlib import Path
+import tempfile
+
 
 
 upload_lock = threading.Lock()
@@ -1442,6 +1446,40 @@ class salim:
         return False  # No vertical split detected
 
 
+    def convert_docx_to_pdf(self, docx_path: str, output_dir: str = None) -> str:
+        """
+        Converts a DOCX file to PDF using LibreOffice.
+
+        :param docx_path: Path to the input DOCX file.
+        :param output_dir: Directory where the PDF will be saved. Defaults to the DOCX file's directory.
+        :return: Path to the converted PDF file.
+        :raises: RuntimeError if conversion fails.
+        """
+        if output_dir is None:
+            output_dir = os.path.dirname(docx_path)
+        
+        try:
+            subprocess.run([
+                'libreoffice',
+                '--headless',
+                '--convert-to', 'pdf',
+                docx_path,
+                '--outdir', output_dir
+            ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            pdf_filename = Path(docx_path).with_suffix('.pdf').name
+            pdf_path = Path(output_dir) / pdf_filename
+            
+            if not pdf_path.exists():
+                raise RuntimeError(f"Conversion failed, PDF not found at {pdf_path}")
+            
+            return str(pdf_path)
+        
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode().strip()
+            raise RuntimeError(f"LibreOffice conversion failed: {error_msg}") from e
+
+
     # Function to extract information from passed file
     def extract_info(self, file, translate, return_summary=False, target_language="EN-US"):
         # Save the uploaded file temporarily
@@ -1454,30 +1492,13 @@ class salim:
 
 
         if file.filename.endswith(".pdf"):
-            # Create the 'screens' directory if it doesn't exist
-            #screens_dir = 'screens'
-            #if not os.path.exists(screens_dir):
-            #    os.makedirs(screens_dir)
-            # Use fitz to convert PDF pages to images
-            #doc = fitz.open(file.filename)
-            # image_paths = []
-            #for page_number in range(len(doc)):
-            #    page = doc.load_page(page_number)
-            #    pix = page.get_pixmap()
-            #    image_path = f"{screens_dir}/page_{page_number + 1}.png"
-            #    pix.save(image_path)
-            #    image_paths.append(image_path)
-            #doc.close()
-
-            # Set cv_input to the list of image paths
-            #cv_input = image_paths
             cv_input = file
             extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
 
         elif file.filename.endswith(".docx"):
-            # Extract text from the DOCX as before
-            cv_input = self.get_docx_text(file.filename)
-            extracted_info = self.extract_infos_from_cv_v3(cv_input, return_summary, file.filename)
+            pdf_path = self.convert_docx_to_pdf(temp_file_path, output_dir=temp_dir)
+            cv_input = pdf_path
+            extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
         else:
             return {"error": "The uploaded file is not a PDF or a DOCX file"}
 
