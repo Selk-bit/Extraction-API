@@ -1448,7 +1448,7 @@ class salim:
 
     def convert_docx_to_pdf(self, docx_path: str, output_dir: str = None) -> str:
         """
-        Converts a DOCX file to PDF using LibreOffice.
+        Converts a DOCX file to PDF using the locally installed LibreOffice.
 
         :param docx_path: Path to the input DOCX file.
         :param output_dir: Directory where the PDF will be saved. Defaults to the DOCX file's directory.
@@ -1460,7 +1460,7 @@ class salim:
         
         try:
             subprocess.run([
-                'libreoffice',
+                'soffice',  # Assuming 'soffice' is in PATH
                 '--headless',
                 '--convert-to', 'pdf',
                 docx_path,
@@ -1496,12 +1496,12 @@ class salim:
             extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
 
         elif file.filename.endswith(".docx"):
+            # Convert DOCX to PDF using portable LibreOffice
             pdf_path = self.convert_docx_to_pdf(temp_file_path, output_dir=temp_dir)
             cv_input = pdf_path
             extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
         else:
             return {"error": "The uploaded file is not a PDF or a DOCX file"}
-
 
 
         # Pass cv_input to extract_infos_from_cv_v2
