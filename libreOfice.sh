@@ -1,8 +1,4 @@
-# Update package lists
-apt-get update
-
-# Install dependencies required by LibreOffice
-apt-get install -y wget tar
+#!/usr/bin/env bash
 
 # Create a directory for LibreOffice
 mkdir -p /opt/libreoffice
