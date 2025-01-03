@@ -1483,8 +1483,11 @@ class salim:
     # Function to extract information from passed file
     def extract_info(self, file, translate, return_summary=False, target_language="EN-US"):
         # Save the uploaded file temporarily
-        with open(file.filename, "wb") as f:
-            f.write(file.file.read())
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, file.filename)
+        with open(temp_file_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
 
         # Initialize variables
         cv_input = None
@@ -1492,12 +1495,14 @@ class salim:
 
 
         if file.filename.endswith(".pdf"):
-            cv_input = file
+            cv_input = temp_file_path
             extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
+
 
         elif file.filename.endswith(".docx"):
             # Convert DOCX to PDF using portable LibreOffice
-            pdf_path = self.convert_docx_to_pdf(temp_file_path, output_dir=temp_dir)
+            pdf_path = os.path.join(temp_dir, os.path.splitext(file.filename)[0] + '.pdf')
+            self.convert_docx_to_pdf_python(temp_file_path, pdf_path)
             cv_input = pdf_path
             extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
         else:
