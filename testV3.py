@@ -1485,6 +1485,7 @@ class salim:
     # Function to extract information from passed file
     def extract_info(self, file, translate, return_summary=False, target_language="EN-US"):
         # Save the uploaded file temporarily
+        temp_dir = tempfile.mkdtemp()
         with open(file.filename, "wb") as f:
             f.write(file.file.read())
 
