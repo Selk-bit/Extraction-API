@@ -1462,7 +1462,7 @@ class salim:
         
         try:
             subprocess.run([
-                'libreoffice',
+                'soffice',
                 '--headless',
                 '--convert-to', 'pdf',
                 docx_path,
