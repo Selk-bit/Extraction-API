@@ -1450,7 +1450,7 @@ class salim:
 
     def convert_docx_to_pdf(self, docx_path: str, output_dir: str = None) -> str:
         """
-        Converts a DOCX file to PDF using LibreOffice.
+        Converts a DOCX file to PDF using LibreOffice's 'soffice' command.
 
         :param docx_path: Path to the input DOCX file.
         :param output_dir: Directory where the PDF will be saved. Defaults to the DOCX file's directory.
@@ -1460,15 +1460,22 @@ class salim:
         if output_dir is None:
             output_dir = os.path.dirname(docx_path)
         
+        soffice_path = '/opt/render/project/.render/libreoffice/program/soffice'
+        
+        if not os.path.isfile(soffice_path):
+            raise RuntimeError(f"'soffice' executable not found at {soffice_path}")
+        
         try:
+            # Execute the 'soffice' command with the full path
             subprocess.run([
-                'soffice',
+                soffice_path,
                 '--headless',
                 '--convert-to', 'pdf',
                 docx_path,
                 '--outdir', output_dir
             ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             
+            # Determine the name of the converted PDF
             pdf_filename = Path(docx_path).with_suffix('.pdf').name
             pdf_path = Path(output_dir) / pdf_filename
             
