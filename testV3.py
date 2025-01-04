@@ -29,7 +29,8 @@ import subprocess
 from pathlib import Path
 import tempfile
 import shutil
-
+from fastapi import UploadFile
+import io
 
 
 upload_lock = threading.Lock()
@@ -1449,7 +1450,7 @@ class salim:
 
     def convert_docx_to_pdf(self, docx_path: str, output_dir: str = None) -> str:
         """
-        Converts a DOCX file to PDF using the locally installed LibreOffice.
+        Converts a DOCX file to PDF using LibreOffice.
 
         :param docx_path: Path to the input DOCX file.
         :param output_dir: Directory where the PDF will be saved. Defaults to the DOCX file's directory.
@@ -1461,7 +1462,7 @@ class salim:
         
         try:
             subprocess.run([
-                'soffice',  # Assuming 'soffice' is in PATH
+                'libreoffice',
                 '--headless',
                 '--convert-to', 'pdf',
                 docx_path,
@@ -1484,28 +1485,32 @@ class salim:
     # Function to extract information from passed file
     def extract_info(self, file, translate, return_summary=False, target_language="EN-US"):
         # Save the uploaded file temporarily
-        temp_dir = tempfile.mkdtemp()
-        temp_file_path = os.path.join(temp_dir, file.filename)
-        with open(temp_file_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
+        with open(file.filename, "wb") as f:
+            f.write(file.file.read())
 
-
+        
         # Initialize variables
         cv_input = None
         extracted_info = {}
 
 
         if file.filename.endswith(".pdf"):
-            cv_input = temp_file_path
+            cv_input = file
             extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
-
 
         elif file.filename.endswith(".docx"):
             # Convert DOCX to PDF using portable LibreOffice
-            pdf_path = os.path.join(temp_dir, os.path.splitext(file.filename)[0] + '.pdf')
-            self.convert_docx_to_pdf_python(temp_file_path, pdf_path)
-            cv_input = pdf_path
-            extracted_info = self.extract_infos_from_cv_v2(cv_input, return_summary, file.filename)
+            pdf_path = self.convert_docx_to_pdf(file.filename, output_dir=temp_dir)
+
+            # Read the converted PDF into bytes
+            with open(pdf_path, "rb") as pdf_file:
+                pdf_bytes = pdf_file.read()
+            
+            # Create a new UploadFile-like object for the PDF
+            pdf_filename = os.path.basename(pdf_path)
+            pdf_upload_file = UploadFile(filename=pdf_filename, file=io.BytesIO(pdf_bytes))
+
+            extracted_info = self.extract_infos_from_cv_v2(pdf_upload_file, return_summary, file.filename)
         else:
             return {"error": "The uploaded file is not a PDF or a DOCX file"}
 
