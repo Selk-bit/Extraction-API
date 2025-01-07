@@ -1065,6 +1065,15 @@ class salim:
             except genai.types.generation_types.StopCandidateException as e:
                 print("Safety rating issue detected during summary extraction:", e)
                 extracted_info["summary"] = ""
+
+        keys_to_check = [
+            "work", "educations", "languages", "skills", "interests", 
+            "social", "certifications", "projects", "volunteering", "references"
+        ]
+        for key in keys_to_check:
+            if key not in extracted_info or not isinstance(extracted_info[key], list):
+                extracted_info[key] = []
+
         #with open("Cv.json", "w+") as f:
         #    json.dump(extracted_info, f)
         extracted_info["language"] = language
