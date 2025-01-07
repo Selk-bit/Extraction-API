@@ -1077,7 +1077,8 @@ class salim:
                 # Ensure all elements in the list are dictionaries
                 if not all(isinstance(item, dict) for item in extracted_info[key]):
                     extracted_info[key] = []
-                    
+
+
         #with open("Cv.json", "w+") as f:
         #    json.dump(extracted_info, f)
         extracted_info["language"] = language
