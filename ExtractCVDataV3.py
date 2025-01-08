@@ -21,6 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import ProcessPoolExecutor
 import fitz
 from collections import Counter
+import random
 
 # Load the environment variables
 load_dotenv()
