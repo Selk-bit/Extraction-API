@@ -889,7 +889,7 @@ class ExtractCVInfos:
         9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to {language} if they're not already. If no language is found, write an empty list [].
         10. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
         11. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
-        12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text)
+        12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text, and don't forget that each skill should be in an object)
         13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to {language}, and if no certification is found, write an empty list [].
         14. Projects: Extract all projects in JSON format as a list containing project_name, description, skills, start_date, and end_date, the description must contain any text you can find talking about the project, if the text contains bullet point tasks, add the string "#start#" at the start of each task sentence, and "#end#" at the end of each task sentence. if the text doesn't contain bulltet point, or parts of the text do not contain bullet points, write them as they are. for skills, list all hard technical skills mentioned in the description of the project at hand, seperated by a comma. projects can be found either in a dedicated section called projects, or inside work experiences, clearly highlighted as projects. if no project is found, write an empty list [].
         15. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
@@ -1026,6 +1026,19 @@ class ExtractCVInfos:
             except genai.types.generation_types.StopCandidateException as e:
                 print("Safety rating issue detected during summary extraction:", e)
                 extracted_info["summary"] = ""
+
+        keys_to_check = [
+            "work", "educations", "languages", "skills", "interests", 
+            "social", "certifications", "projects", "volunteering", "references"
+        ]
+        for key in keys_to_check:
+            if key not in extracted_info or not isinstance(extracted_info[key], list):
+                extracted_info[key] = []
+            else:
+                # Ensure all elements in the list are dictionaries
+                if not all(isinstance(item, dict) for item in extracted_info[key]):
+                    extracted_info[key] = []
+
         #with open("Cv.json", "w+") as f:
         #    json.dump(extracted_info, f)
         extracted_info["language"] = language
