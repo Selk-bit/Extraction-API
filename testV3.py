@@ -793,7 +793,7 @@ class salim:
                                     section_text = re.sub(r'', '', section_text)
                                     section_text = section_text.replace("\\n", "").replace("\n", "")
                                     section_text = self.replace_unbalanced_quote(section_text)
-                                    temp_work = json.loads(section_text)
+                                    temp_work = json.loads(section_text, strict=False)
                                     for key_work, work in enumerate(temp_work):
                                         temp_work[key_work]["responsibilities"] = self.convert_to_html(work["responsibilities"]) if self.convert_to_html(work["responsibilities"]).replace("\n", "") else ""
                                         #temp_work[key_work]["responsibilities"] = f"{temp_work[key_work]["responsibilities"]}<p>{temp_work[key_work]["skills"]}</p></br>" if temp_work[key_work]["skills"] != "" else temp_work[key_work]["responsibilities"]
@@ -991,7 +991,7 @@ class salim:
                                     section_text = re.sub(r'', '', section_text)
                                     section_text = section_text.replace("\\n", "").replace("\n", "")
                                     section_text = self.replace_unbalanced_quote(section_text)
-                                    temp_work = json.loads(section_text)
+                                    temp_work = json.loads(section_text, strict=False)
                                     for key_work, work in enumerate(temp_work):
                                         if temp_work[key_work]["responsibilities"]:
                                             temp_work[key_work]["responsibilities"] = self.convert_to_html(work["responsibilities"]) if self.convert_to_html(work["responsibilities"]).replace("\n", "") else ""

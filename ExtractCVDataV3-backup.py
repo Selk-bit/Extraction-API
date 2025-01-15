@@ -584,7 +584,7 @@ class ExtractCVInfos:
                             try:
                                 if key == "work":
                                     section_text = re.sub(r'', '', section_text)
-                                    temp_work = json.loads(section_text)
+                                    temp_work = json.loads(section_text, strict=False)
                                     for key_work, work in enumerate(temp_work):
                                         temp_work[key_work]["responsibilities"] = work["responsibilities"] if work["responsibilities"].replace("\n", "") else ""
                                         if temp_work[key_work]["responsibilities"] and not language:
