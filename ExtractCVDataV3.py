@@ -951,11 +951,11 @@ class ExtractCVInfos:
                         if key in ["work_experiences", "educations", "languages", "skills", "interests",
                                    "social", "certifications", "projects", "volunteering", "references", "work"]:
                             try:
+                                section_text = re.sub(r'', '', section_text)
+                                section_text = section_text.replace("\\n", "").replace("\n", "")
+                                section_text = self.replace_unbalanced_quote(section_text)
+                                section_text = re.sub(r"}].*", "}]", section_text)
                                 if key == "work":
-                                    section_text = re.sub(r'', '', section_text)
-                                    section_text = section_text.replace("\\n", "").replace("\n", "")
-                                    section_text = self.replace_unbalanced_quote(section_text)
-                                    section_text = re.sub(r"}].*", "}]", section_text)
                                     temp_work = json.loads(section_text)
                                     for key_work, work in enumerate(temp_work):
                                         temp_work[key_work]["responsibilities"] = self.convert_to_html(work["responsibilities"]) if self.convert_to_html(work["responsibilities"]).replace("\n", "") else ""
@@ -969,13 +969,16 @@ class ExtractCVInfos:
                                     temp_work = self.merge_jobs(temp_work)
                                     section_text = json.dumps(temp_work)
                                 if key == "projects":
-                                    section_text = re.sub(r'', '', section_text)
-                                    section_text = section_text.replace("\\n", "").replace("\n", "")
-                                    section_text = self.replace_unbalanced_quote(section_text)
                                     temp_project = json.loads(section_text)
                                     for key_project, project in enumerate(temp_project):
                                         temp_project[key_project]["description"] = self.convert_to_html(project["description"]) if self.convert_to_html(project["description"]).replace("\n", "") else ""
                                     section_text = json.dumps(temp_project)
+                                if key == "skills":
+                                    temp_skills = json.loads(section_text, strict=False)
+                                    for key_skill, skill in enumerate(temp_skills):
+                                        if temp_skills[key_skill]["level"] is None:
+                                            temp_skills[key_skill]["level"] = ""
+                                    section_text = json.dumps(temp_skills)
                                 extracted_info[key] = json.loads(section_text.replace("\n", "").replace("\r", "").replace("<br><br>", "<br>"))
                                 if key == "interests":
                                     processed_interests = []
