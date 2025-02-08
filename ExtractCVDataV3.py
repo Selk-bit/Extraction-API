@@ -671,7 +671,7 @@ class ExtractCVInfos:
     def get_conversational_chain(self):
         genai.configure(api_key=self.api_key)
 
-        model = ChatGoogleGenerativeAI(model="gemini-2.0-flash-002", temperature=0, max_tokens=8192)
+        model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, max_tokens=8192)
 
         prompt_template = """
         Answer the question as detailed as possible from the provided context, and make sure to provide all the details,

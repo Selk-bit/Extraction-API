@@ -59,25 +59,25 @@ SUPPORTED_MIME_TYPES = {
     "application/pdf": "pdf",
 }
 
-#def process_file(file, translate, target_language):
-#    return cv.extract_info(file, translate, return_summary=False, target_language=target_language)
-
 def process_file(file, translate, target_language):
-    extracted_info = cv.extract_info(file, translate, return_summary=False, target_language=target_language)
+   return cv.extract_info(file, translate, return_summary=False, target_language=target_language)
+
+# def process_file(file, translate, target_language):
+#     extracted_info = cv.extract_info(file, translate, return_summary=False, target_language=target_language)
     
-    # Check if "name", "email", and "work" keys are present and not empty
-    required_keys = ["name", "email", "work"]
-    if not all(key in extracted_info for key in required_keys):
-        # Return an object with only the "filename" and "error" keys
-        return {
-            "filename": file.filename,
-            "error": (
-                f"An error occurred while extracting information from '{file.filename}'. "
-                "Please ensure the file is a valid CV and try again."
-            )
-        }
-    else:
-        return extracted_info
+#     # Check if "name", "email", and "work" keys are present and not empty
+#     required_keys = ["name", "email", "work"]
+#     if not all(key in extracted_info for key in required_keys):
+#         # Return an object with only the "filename" and "error" keys
+#         return {
+#             "filename": file.filename,
+#             "error": (
+#                 f"An error occurred while extracting information from '{file.filename}'. "
+#                 "Please ensure the file is a valid CV and try again."
+#             )
+#         }
+#     else:
+#         return extracted_info
 
 
 def process_translation(data, target_language):
