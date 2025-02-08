@@ -83,7 +83,7 @@ class ExtractCVInfos:
 
 
     def count_tokens(self, text):
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        model = genai.GenerativeModel("models/gemini-2.0-flash")
         count_response = model.count_tokens(text)
         return count_response.total_tokens
         # return len(self.encoder.encode(text))
@@ -671,7 +671,7 @@ class ExtractCVInfos:
     def get_conversational_chain(self):
         genai.configure(api_key=self.api_key)
 
-        model = ChatGoogleGenerativeAI(model="gemini-1.5-flash-002", temperature=0, max_tokens=8192)
+        model = ChatGoogleGenerativeAI(model="gemini-2.0-flash-002", temperature=0, max_tokens=8192)
 
         prompt_template = """
         Answer the question as detailed as possible from the provided context, and make sure to provide all the details,
@@ -884,18 +884,18 @@ class ExtractCVInfos:
         3. Phone: Extract the phone number of the candidate.
         4. Age: Extract the age of the candidate, and write the number only. If no age is found, write an empty string ''.
         5. City: Extract the city of the candidate. If no city is found, write an empty string ''.
-        6. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find new start date and end date, that's a new experience, even if two consecutive roles are identical within the same company but with different start and end dates (EX: Software Engineer at company X from june 2020 to june 2021, should be a different experience than Software Engineer at the same company X from june 2021 to june 2022, if they have seperated time periods in the resume text), thus, you should seperate experiences within the same company but with different time periods. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, leave it empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said, not in other sections, the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique" or similar titles, written in {language}). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest, and make sure that Json objects are formatted correctly.
-        7. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
-        8. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
-        9. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to {language} if they're not already. If no language is found, write an empty list [].
-        10. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
-        11. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
-        12. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text, and don't forget that each skill should be in an object)
-        13. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to {language}, and if no certification is found, write an empty list [].
-        14. Projects: Extract all projects in JSON format as a list containing project_name, description, skills, start_date, and end_date, the description must contain any text you can find talking about the project, if the text contains bullet point tasks, add the string "#start#" at the start of each task sentence, and "#end#" at the end of each task sentence. if the text doesn't contain bulltet point, or parts of the text do not contain bullet points, write them as they are. for skills, list all hard technical skills mentioned in the description of the project at hand, seperated by a comma. projects can be found either in a dedicated section called projects, or inside work experiences, clearly highlighted as projects. if no project is found, write an empty list [].
-        15. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
-        16. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
-        17. Headline: Extract the current occupation of the candidate, if it wasn't explicitly mentioned, deduce it from the most recent work experience (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
+        6. Headline: Extract the current occupation of the candidate, if it wasn't explicitly mentioned, deduce it from the most recent work experience (Remove unnecessary spaces within words if found, and leave necessary spaces, and correct capitalization).
+        7. Work Experiences: For each experience, return a JSON object with "job_title", "company_name", "context", "responsibilities", "skills", "city", "start_date," and "end_date". Whenever you find a new date, that's a new experience, you should seperate consecutive experiences within the same company but are seperated by different time periods in the resume. for "context", populate it with the context text if found, the context text is usually found under the title "context" or "contexte", if no such text if found, check if there are project names listed within the experience text, and put all of the names in the context as follows: "Project: NAME1, Project: Name2" with "Project" written in {language}, if no text under "context" title, nor project names exist, leave context empty.  in "responsibilities", list tasks as a string, enclosed with "#start#" at the beginning of every task sentence, and the string "#end#" at the end of every task sentence, extracted from the resume text. if tasks aren’t explicitly listed, intelligently extract them from the resume text (task sentences should be complete imformative sentences). Sometimes, you will find only dates and role names in the work experience section, while their responsibilities are present in a different section, in this case, try intelligently mapping each experience with its equivalent responsibilities based on each experience's order, as well as the role name and company name (when you're mapping with company names or role names, keep in mind that it's not neccessary for the names in both sections to be 100% identical to be considered the same comapany or the same role, if names are similar, that would be enough. company names can either be extracted from text, or logos if existed). In "skills", if there was a paragraph dedicated to listing technical skills in the experience text (Only in the text of said experience, not in other sections, knowing that the experience text ends once another experience text starts, or once another entirely different secion starts), put it here (it's usually preceeded with a title such as "Technical Skills", "Compétence techniques", "Skills", "Compétences", "Technical Environment", "Environnement technique", "Keywords" or any other similar titles in {language}). If there was no paragraph listing the skills acquired on that experience, then leave "skills" empty. For dates, mark one ongoing role with "present" as "end_date" and set missing dates to empty strings. every "start_date" and "end_date" should contain both the month and year if they exist, or only the year if the month doesn't exist. sort experiences from most recent to oldest. And finally make sure that Json objects are formatted correctly, and don't ever use double quotes inside values text, nor any symbol approximating double quotes such as », use single quotes instead.
+        8. Years Of Experience: calculate the number of years of experience from work experiences, the current year minus the oldest year you can find in work experiences (which is the start year of the oldest work experience), should be the number. Write the number only. Please be sure to find the oldest year correctly.
+        9. Educations: Extract all educations and formations in JSON format as a list containing degree, institution, start_year, and end_year, with years being string.
+        10. Languages: Extract all spoken languages (non-programming) in JSON format as a list containing language and level, and translate them to {language} if they're not already. If no language is found, write an empty list [].
+        11. Skills: Extract all technical skills (non-social) in JSON format as a list containing skill, level and category. Don't repeat the same skill more than once. and don't exceed 20 json objects. Also, for the category, choose a groupe under which the skill can be labeled (EX: if the skill was JavaScript, the category will be programming languages, but in {language}), use your intelligence to group skills, and write categories names in {language}, and don't exceed 6 different categories overall.
+        12. Interests: Extract all interests/hobbies in JSON format as a list containing interest. If no interest is found, write an empty list [].
+        13. Social Skills: Extract all soft skills (social, communication, etc.) in JSON format as a list of objects, each object containing "skill" as a key, with the skill as the value. Don't exceed 10 json objects, if there are more than 10 social skills, try merging the ones that can be merged with each other. If no social skill is found, write an empty list []. (write all soft skills in {language} as they are written in the resume text, and don't forget that each skill should be in an object)
+        14. Certifications: Extract all certifications in JSON format as a list containing certification, institution, link, and date. Translate certification to {language}, and if no certification is found, write an empty list [].
+        15. Projects: Extract all projects in JSON format as a list containing project_name, description, skills, start_date, and end_date, the description must contain any text you can find talking about the project, analyze the project's text and extract from it a list of tasks based on your understanding of the context and the positions of newlines, then add the string "#start#" at the beginning of each task sentence, and "#end#" at the end of each task sentence. whenever you find a newline in the project's description, that's the end of a task and the start of another, so please don't forget adding the strings "#start#" and "#end#". for the skills, list all hard technical skills mentioned in the description of the project at hand, seperated by a comma. projects can be found a dedicated section called projects. if no project is found, write an empty list [].
+        16. Volunteering: Extract all volunteering experiences in JSON format as a list containing organization, position, description, start_date, and end_date, and if no volunteering experience is found, write an empty list [].
+        17. References: Extract all references in JSON format as a list containing name, position, company, email, and phone (do not include candidate's own contacts), and if no reference is found, write an empty list [].
         18. Summary: If a summary exists in the Resume already, extract it, you can find it either at the beginning or at the end, take the longest one. (if no summary is found in Resume data, then leave an empty string)
         CV Text:
         {cv_text}
@@ -915,24 +915,24 @@ class ExtractCVInfos:
                 #   f.write(response_text)
                 # Define the labels we expect in the response
                 labels = {
-                    "1. Name:": "name",
-                    "2. Email:": "email",
-                    "3. Phone:": "phone",
-                    "4. Age:": "age",
-                    "5. City:": "city",
-                    "6. Work Experiences:": "work",
-                    "7. Years Of Experience:": "yoe",
-                    "8. Educations:": "educations",
-                    "9. Languages:": "languages",
-                    "10. Skills:": "skills",
-                    "11. Interests:": "interests",
-                    "12. Social Skills:": "social",
-                    "13. Certifications:": "certifications",
-                    "14. Projects:": "projects",
-                    "15. Volunteering:": "volunteering",
-                    "16. References:": "references",
-                    "17. Headline:": "headline",
-                    "18. Summary:": "summary",
+                    "Name:": "name",
+                    "Email:": "email",
+                    "Phone:": "phone",
+                    "Age:": "age",
+                    "City:": "city",
+                    "Work Experiences:": "work",
+                    "Years Of Experience:": "yoe",
+                    "Educations:": "educations",
+                    "Languages:": "languages",
+                    "Skills:": "skills",
+                    "Interests:": "interests",
+                    "Social Skills:": "social",
+                    "Certifications:": "certifications",
+                    "Projects:": "projects",
+                    "Volunteering:": "volunteering",
+                    "References:": "references",
+                    "Headline:": "headline",
+                    "Summary:": "summary",
                 }
 
                 for label, key in labels.items():
@@ -1548,27 +1548,48 @@ class ExtractCVInfos:
 
 
 
-    def translate_json(self, data, target_language):
-        email = data["email"]
-        json_string = json.dumps(data)
-        json_string = json_string.replace("```", "")
-        prompt = f"""
-        Translate the following JSON data to {target_language}, only values should be translated, keys should remain the same, and values containing numbers should be represented as strings in the json. Answer only with the json, nothing else should be added, no comments no nothing, AND DON'T USE AN EDITOR:
-        {json_string}
+    async def translate_json(self, data: dict, target_language: str) -> dict:
         """
-        response = self.chain({"context": "JSON Translation", "question": prompt, "input_documents": []}, return_only_outputs=True)
-        output_text = response["output_text"]
-        #with open("Cv.txt", "w+") as f:
-        #    f.write(output_text)
-        if "```" in output_text:
-            output_text = output_text.split("```")[1]
-            output_text = output_text.split("json", 1)[1] if output_text.startswith("json") else output_text
-        if email:
-            threading.Thread(target=self.process_translation, args=(prompt, output_text, email)).start()
-        if response:
-            return json.loads(output_text.strip())
+        The main async method that decides whether to split the data or not, 
+        and if split, sends both chunks to Gemini in parallel.
+        """
+        json_string = json.dumps(data, ensure_ascii=False)
+        input_tokens = self.count_tokens(json_string)
+        
+        threshold = 5000
+        if input_tokens <= threshold:
+            # Just do a single async call
+            return await self._translate_chunk_async(data, target_language)
         else:
-            return {}
+            # Split the JSON if it has a large 'work' list
+            if 'work' in data and isinstance(data['work'], list) and len(data['work']) > 1:
+                work_list = data['work']
+                half = len(work_list) // 2
+
+                # Prepare chunk 1
+                chunk1 = copy.deepcopy(data)
+                chunk1['work'] = work_list[:half]
+
+                # Prepare chunk 2
+                chunk2 = copy.deepcopy(data)
+                chunk2['work'] = work_list[half:]
+
+                # Fire off both translations concurrently
+                task1 = asyncio.create_task(self._translate_chunk_async(chunk1, target_language))
+                task2 = asyncio.create_task(self._translate_chunk_async(chunk2, target_language))
+
+                # Wait until both complete
+                translated_part1, translated_part2 = await asyncio.gather(task1, task2)
+                # Merge the 'work' arrays from both parts
+                if 'work' not in translated_part1:
+                    translated_part1['work'] = []
+                if 'work' in translated_part2:
+                    translated_part1['work'].extend(translated_part2['work'])
+
+                return translated_part1
+            else:
+                # If 'work' doesn't exist or isn't a large list, fallback to single chunk
+                return await self._translate_chunk_async(data, target_language)
 
 
     def process_translation(self, combined_prompt, output_text, email):
