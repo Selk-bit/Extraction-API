@@ -83,7 +83,7 @@ class ExtractCVInfos:
 
 
     def count_tokens(self, text):
-        model = genai.GenerativeModel("models/gemini-2.0-flash")
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
         count_response = model.count_tokens(text)
         return count_response.total_tokens
         # return len(self.encoder.encode(text))
@@ -671,7 +671,7 @@ class ExtractCVInfos:
     def get_conversational_chain(self):
         genai.configure(api_key=self.api_key)
 
-        model = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0, max_tokens=8192)
+        model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0, max_tokens=8192)
 
         prompt_template = """
         Answer the question as detailed as possible from the provided context, and make sure to provide all the details,
